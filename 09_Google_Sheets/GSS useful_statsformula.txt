@@ -1,0 +1,11 @@
+=IFERROR(IF(ROUND(MOD(DIVIDE($A2, 3600000), QUOTIENT($A2, 3600000))*60) = 0, JOIN(" ", QUOTIENT($A2, 3600000), "h"), JOIN(" ", QUOTIENT($A2, 3600000), "h", ROUND(MOD(DIVIDE($A2, 60000), 60)), "m")), IF(DIVIDE($A2, 60000) < 1 , JOIN(" ", ROUND(DIVIDE($A2, 60000), 2), "m"), JOIN(" ", ROUND(DIVIDE($A2, 60000)), "m")))
+
+---------------------------------------
+=DIVIDE(ARRAYFORMULA(SUM(POWER(MINUS(B$2:B$13, B$19), 2))), B$14-1) var
+
+=ARRAYFORMULA(SUM(MINUS($B$2:$B$13, $B$19)*MINUS($C$2:$C$13, $C$19)))/($B$14-1) covar
+
+=DIVIDE($F$21, PRODUCT($B$30, $C$30)) correl
+---------------------------------------
+
+=IF(EXACT($B2, $C2), "Congrats!", "Check your formula") 
