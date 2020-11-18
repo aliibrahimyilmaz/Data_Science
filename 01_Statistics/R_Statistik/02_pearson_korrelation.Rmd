@@ -1,0 +1,108 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+### DAS THEMA: HYPOTHESE, PEARSON KORRELATION
+
+# 1) Hypothese
+H1: Es gibt einen Zusammenhang zwischen IQ und Projekterfolg.
+
+H0: Es gibt keinen Zusammenhang zwischen IQ und Projekterfolg.
+
+# 2) Voraussetzungen
+(a) Die Variablen sind mindestens intervallskaliert -> Ja, beide Variablen sind metrisch.
+```{r}
+pearson$IQ
+```
+```{r}
+pearson$Projekterfolg
+```
+
+(b) Die Variablen sind normalverteilt (n>30)-> siehe Histogramm
+
+```{r}
+hist(pearson$IQ, main = "Histogramm des IQs", xlab = "IQ", ylab ="Anzahl", col = "salmon" ,breaks = 15)
+```
+Kommentar: Die Variable IQ ist anscheinend normalverteilt. Sie zeigt eine bauchige Mitte und geht an den Rändern gegen null. Auch die Stichprobengröße mit n>30 spricht dafuer. Die Variable IQ ist intervallskaliert, da es sich um eine metrische Größe mit gleichmäßigen Abständen handelt.
+
+```{r}
+h <- hist(pearson$Projekterfolg, main = "Histogramm des Projekterfolgs", xlab = "Projekterfolg", ylab ="Anzahl", col = "lightblue" ,breaks = 15)
+
+x <- pearson$Projekterfolg 
+
+xfit<-seq(min(x),max(x),length=40)
+yfit<-dnorm(xfit,mean=mean(x),sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="blue", lwd=2) 
+```
+Kommentar: Die Variable Projekterfolg ist anscheinend normalverteilt. Sie zeigt eine bauchige Mitte und geht an den Rändern gegen null. Auch die Stichprobengröße mit n>30 spricht dafuer. Die Variable Projekterfolg ist intervallskaliert, da es sich um eine metrische Größe mit gleichmaessigen Abständen handelt.
+
+(c) Der untersuchte Zusammenhang zwischen den Variablen muss linear sein -> siehe Streudiagramm
+
+# 3) Grundlegende Konzepte: Was ist Pearson?
+Die Korrelation beschreibt den Zusammenhang von zwei intervallskalierten Merkmalen/Variablen einer Zufallsstichprobe. Pearson ist die Konzepte zur Berechnung des Korrelationskoeffizienten r nach Bravais und Pearson, damit man die Stärke des Zusammenhangs bestimmen kann.
+
+# 4) Grafische Veranschaulichung des Zusammenhangs -> Streudiagramm
+-erste Variante:
+```{r}
+plot(pearson$Projekterfolg ~ pearson$IQ, main = "Streudiagramm zwischen IQ und Projekterfolg", xlab = "IQ", ylab= "Projekterfolg")
+abline(lm(pearson$Projekterfolg ~ pearson$IQ, data = pearson), col="tomato")
+```
+- zweite Variante:
+```{r}
+library(car)
+```
+```{r}
+scatterplot(pearson$Projekterfolg ~ pearson$IQ, main = "Streudiagramm zwischen IQ und Projekterfolg", xlab = "IQ", ylab= "Projekterfolg")
+```
+
+- dritte Variante:
+```{r}
+library(ggplot2)
+```
+```{r}
+ggplot(pearson, aes(x = IQ, y = Projekterfolg)) + geom_point(size = 3) + geom_smooth(method = "lm", col = "red")
+```
+Das Streudiagramm in Abbildung zeigt eine tendenziell positive lineare Beziehung zwischen den beiden Variablen. Das heisst, die beiden Variablen korrelieren vermutlich. Da die Korrelationsanalyse einen ungerichteten Zusammenhang untersucht, lässt er sich auf zwei Weisen ausformulieren: Je höher der IQ, desto höher ist der Projekterfolg, oder je höher der Projekterfolg, desto höher ist der IQ.
+
+# 5) Deskriptive Statistik
+```{r}
+library(psych)
+```
+```{r}
+describe(pearson)
+```
+Abbildung können die Mittelwerte und Standardabweichungen der Variablen IQ und Projekterfolg abgelesen werden. Im Mittel liegt die IQ der Jugendlichen bei 102.47 (SD = 11.39,n=104)). Der Projekterfolg gemessen in Prozent liegt durchschnittlich bei 62.38% (SD = 11.52, n=104) in der Einzelarbeit.
+
+# 6) Ergebnisse der Korrelationsanalyse
+
+```{r}
+test <- cor.test(pearson$Projekterfolg, pearson$IQ)
+test
+```
+Der R-Output in Abbildung gibt den Korrelationskoeffizienten sowie den p-Wert (Signifikanz) und die Stichprobengrösse n wieder. Es wird ersichtlich, dass ein Zusammenhang vorliegt zwischen IQ und Projekterfolg (r = .9875, p < 2.2e-16, n = 104). Da r einen positiven Wert aufweist, kann von einem positiven linearen und signifikanter Zusammenhang zwischen IQ und Projekterfolg ausgegangen werden. Das bedeutet: Je höher der IQ, detso besser war das Projektergebnis.
+
+Hinweis: “p-value < 2.2e-16”: Diese Zahle hat umgrechnet 16 Nullen 0.000000000000000022. Aus der deskriptive Statistik kannst die Anzahl der Datensatze entnehmen.
+
+# 7) Berechnung des Bestimmtheitsmasses
+Aus der Korrelation lässt sich durch Quadrieren das Bestimmtheitsmass berechnen:
+
+Bestimmtheitsmasses=r**2∗100=0.98755082∗100
+
+```{r}
+rbestimmt <- test$estimate^2*100
+sprintf("Das Bestimmtheitsmaß liegt bei %.2f Prozent.", rbestimmt)
+```
+Wird dieser Wert mit 100 multipliziert, so ergibt sich ein Prozentwert. Dieser gibt an, welcher Anteil der Varianz in beiden Variablen durch gemeinsame Varianzanteile determiniert wird. Für das vorliegende Beispiel beträgt der Anteil der gemeinsamen Varianz 97.52%.
+
+# 8) Berechnung der Effektstärke
+Um die Bedeutsamkeit eines Ergebnisses zu beurteilen, werden Effektstärken berechnet. Im Beispiel ist die Korrelation der beiden Variablen signifikant, doch es stellt sich die Frage, ob der Zusammenhang gross genug ist, um ihn als bedeutend einzustufen. Der Korrelationskoeffizient r von Bravais-Pearson stellt selbst ein Mass für die Effektstärke dar.
+
+Um zu bestimmen, wie gross der gefundene Zusammenhang ist, kann man sich an der Einteilung von Cohen (1992) orientieren:
+```{r}
+sprintf("Die Effektstärke liegt bei %.4f.",test$estimate)
+```
+Damit entspricht ein Korrelationskoeffizient(r) von .9875 einem starken Effekt.
+
+# 9)  Aussage
+Der IQ und der Projekterfolg korrelieren signifikant (r = .9875, p <2.2e-16, n = 104). Je höher der IQ eines Jugendlichen, desto besser ist das Projektergebnis. 97.52% der Streuung der gemeinsamen Varianz kann durch IQ und Projekterfolg erklärt werden. Dabei handelt es sich nach Cohen (1992) um einen starken Effekt. H0 kann verworfen werden.

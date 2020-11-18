@@ -1,0 +1,149 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+### DAS THEMA: Grundgesamtheit, Stichprobe und Skalenniveau
+
+# ich bin eine überschrift
+
+# R statistik mit Jule
+# 1) Legen Sie ein Notebook an und speichern Sie es. Beachten Sie die No-goes und öffnen Sie die Preview. 
+File - new file - R Notebook
+
+# 2) Geben Sie „Hello World“ aus. 
+```{r}
+print("Hello World")
+```
+
+# 3) Weisen Sie die Zahlen a und b zu und rechnen Sie eine Addition durch. 
+```{r}
+a = 5
+b <- 4
+a+b
+a
+b
+print(a + b)
+```
+
+
+# 4) Berechnen Sie die Wurzel aus 9 und geben Sie die aus. 
+```{r}
+print(9**0.5)
+9**0.5
+wurzel <- 9
+
+sprintf("Die Wurzel aus %.2f ist %.3f.", wurzel, sqrt(wurzel))
+```
+
+
+# 5) Lesen Sie die Datei „Pearson“ ein.
+var1: File - import Dataset - from
+
+var2:
+```{r}
+library(readxl)
+pearson <- read_excel("C:/Users/aliyi/Desktop/ALFATRAINING/statistik/pearson.xlsx")
+View(pearson)
+```
+
+
+# 6) Package installieren 
+tools - install packages
+```{r}
+library(psych)
+```
+
+
+# 7) Arten von Daten und Werte zuweisen üben
+
+```{r}
+str(pearson)
+```
+```{r}
+buchstaben <- c("a", "b", "c")
+buchstaben
+```
+```{r}
+typeof(buchstaben)
+```
+```{r}
+class(buchstaben)
+```
+### logische / boolische variable
+```{r}
+var1 <- c(T, "F", TRUE, 2)
+typeof(var1)
+var1
+```
+```{r}
+var2 <- c(15.24, 10.0)
+var2
+```
+
+# 8) Meine erste Liste
+
+```{r}
+my_list <- list(var1, var2)
+my_list
+```
+
+# 9) Mein erster Datensatz 
+
+```{r}
+my_datensatz <- data.frame(var1, var2)
+my_datensatz
+```
+
+# 10) Meine erste If-Bedingung
+```{r}
+alter <- 37
+
+if(alter < 20){
+  print("ich bin ein Teeniiiii!!!")
+}else if(alter >= 67){
+  print("Die Rente....!!!")
+}else{
+  print("das harte leben......!!!")
+}
+```         
+# 11) Drei Arten von Schleifen 
+# 12) Welchen Datentyp hat meine Variable? 
+# 13) Deskriptive Statistik- Anzahl n, Mean (Mittelwert), SD(Standardabweichung)
+```{r}
+describe(pearson)
+```
+
+
+# 14) Mein erstes Histogramm
+# https://www.nceas.ucsb.edu/sites/default/files/2020-04/colorPaletteCheatsheet.pdf
+```{r}
+hist(pearson$IQ,
+     main = "ich bin eine Überschrift",
+     ylab = "x-achse",
+     xlab = "y-achse",
+     col = "salmon")
+```
+
+# 15) Zufallsdaten anlegen und zuweisen.
+
+```{r}
+data <- data.frame( #Dataframe
+name=c( rep("A",50), rep("B",50)),#Spaltenname "name" - wiederhole 50xA und wiederhole 50xB
+value= #Spaltenname "value" 
+c( rnorm(50, 12, 5), # 50x Zufallsdaten (50, Mittelwert 12 und in der SD 5)
+rnorm(50, 19, 3))# 50x Zufallsdaten (50, Mittelwert 19 und in der SD 3)
+)
+```
+```{r}
+head(data)
+```
+```{r}
+View(data)
+```
+
+```{r}
+library(psych)
+describeBy(data$value, group = data$name, mat= T)
+```
+
+# 16) Kontrolle im Preview

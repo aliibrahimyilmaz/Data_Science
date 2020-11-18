@@ -1,0 +1,120 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+### DAS THEMA: AUFGABE-2, Korrelation nach Bravais-Pearson (Metrisch x Metrisch)
+Beschreibung
+
+Im Rahmen einer Studie wurden Hauskatzen untersucht, dazu wurde das Gewicht der Katzen, sowie deren Herzgewicht erhoben. Es soll untersucht, ob es einen Zusammenhang zwischen dem Herzgewicht und dem Körpergewicht der Katzen besteht.
+
+```{r}
+data <- read.csv("uebung2.csv")
+data
+```
+
+
+# Aufgabenstellung
+# 1) Hypothese
+H1: Es gibt einen Zusammenhang zwischen dem Herzgewicht und dem Körpergewicht der Katzen.
+
+H0: Es gibt keinen Zusammenhang zwischen dem Herzgewicht und dem Körpergewicht der Katzen.
+
+# 2) Voraussetzungen
+(a) Die Variablen sind mindestens intervallskaliert -> Ja, beide Variablen sind metrisch. (Verhältnisskala)
+
+```{r}
+data$Bwt
+```
+```{r}
+data$Hwt
+```
+(b) Die Variablen sind normalverteilt (n>30)-> siehe Histogramm
+
+```{r}
+x <- data$Bwt 
+
+h <- hist(x, main = "Histogramm des Bwt", xlab = "Bwt", ylab ="Anzahl", col = "lightblue" ,breaks = 15)
+
+xfit<-seq(min(x),max(x),length=40)
+yfit<-dnorm(xfit,mean=mean(x),sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="blue", lwd=2) 
+```
+Kommentar: Die Variable Bwt ist anscheinend normalverteilt. Sie zeigt eine bauchige Mitte und geht an den Rändern gegen null. Auch die Stichprobengröße mit n>30 spricht dafuer. Die Variable Bwt ist verhältnisskaliert, da es sich um eine metrische Größe mit gleichmaessigen Abständen handelt.
+
+```{r}
+x <- data$Hwt 
+
+h <- hist(x, main = "Histogramm des Hwt", xlab = "Hwt", ylab ="Anzahl", col = "salmon" ,breaks = 15)
+
+xfit<-seq(min(x),max(x),length=40)
+yfit<-dnorm(xfit,mean=mean(x),sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="blue", lwd=2)
+```
+Kommentar: Die Variable Hwt ist anscheinend normalverteilt. Sie zeigt eine bauchige Mitte und geht an den Rändern gegen null. Auch die Stichprobengröße mit n>30 spricht dafuer. Die Variable Hwt ist verhältnisskaliert, da es sich um eine metrische Größe mit gleichmaessigen Abständen handelt.
+
+(c) Der untersuchte Zusammenhang zwischen den Variablen muss linear sein -> siehe Streudiagramm
+
+# 3) Grundlegende Konzepte: Was ist Pearson?
+
+Die Korrelation beschreibt den Zusammenhang von zwei verhältnisskalierten Merkmalen/Variablen einer Zufallsstichprobe. Pearson ist die Konzepte zur Berechnung des Korrelationskoeffizienten r nach Bravais und Pearson, damit man die Stärke des Zusammenhangs bestimmen kann.
+
+# 4) Grafische Veranschaulichung des Zusammenhangs -> Streudiagramm
+
+```{r}
+plot(data$Bwt ~ data$Hwt, main = "Streudiagramm zwischen Herzgewicht und Körpergewicht", xlab = "Herzgewicht", ylab= "Körpergewicht")
+abline(lm(Bwt ~ Hwt, data = data), col="red")
+```
+```{r}
+library(carData)
+```
+```{r}
+scatterplot(Bwt ~ Hwt, data=data, main = "Streudiagramm zwischen Herzgewicht und Körpergewicht", xlab = "Herzgewicht", ylab= "Körpergewicht")
+```
+
+```{r}
+library(ggplot2)
+```
+```{r}
+ggplot(data, aes(x = Hwt, y = Bwt)) + geom_point(size = 3) + geom_smooth(method = "lm", col = "red")
+```
+Das Streudiagramm in Abbildung zeigt eine tendenziell positive lineare Beziehung zwischen den beiden Variablen. Das heisst, die beiden Variablen korrelieren vermutlich. Da die Korrelationsanalyse einen ungerichteten Zusammenhang untersucht, lässt er sich auf zwei Weisen ausformulieren: Je höher der Herzgewicht, desto höher ist der Körpergewicht, oder je höher der Körpergewicht, desto höher ist der Herzgewicht.
+
+# 5) Deskriptive Statistik
+
+```{r}
+describe(data)
+```
+Abbildung können die Mittelwerte und Standardabweichungen der Variablen Herzgewicht und Körpergewicht abgelesen werden. Im Mittel liegt die Herzgewicht der Katzen bei 11.32 Gramm (SD = 2.54, n=97)). Der Körpergewicht einer Katze liegt durchschnittlich bei 2.9 Kilogramm (SD = 0.47, n=97). 
+
+# 6) Ergebnisse der Korrelationsanalyse
+
+```{r}
+test <- cor.test(data$Bwt, data$Hwt)
+test
+```
+Der R-Output in Abbildung gibt den Korrelationskoeffizienten sowie den p-Wert (Signifikanz) und die Stichprobengrösse n wieder. Es wird ersichtlich, dass ein Zusammenhang vorliegt zwischen Herzgewicht und Körpergewicht (r = 0.7930296, p-value < 2.2e-16, n = 97). Da r einen positiven Wert aufweist, kann von einem positiven linearen und signifikanter Zusammenhang zwischen Herzgewicht und Körpergewicht ausgegangen werden. Das bedeutet: Je höher der Herzgewicht, detso höher war der Körpergewicht.
+
+# 7) Berechnung des Bestimmtheitsmasses (covariance)
+
+Aus der Korrelation lässt sich durch Quadrieren das Bestimmtheitsmass berechnen:
+
+```{r}
+rbestimmt <- test$estimate^2*100
+sprintf("Das Bestimmtheitsmaß liegt bei %.2f Prozent.", rbestimmt)
+```
+Wird dieser Wert mit 100 multipliziert, so ergibt sich ein Prozentwert. Dieser gibt an, welcher Anteil der Varianz in beiden Variablen durch gemeinsame Varianzanteile determiniert wird. Für das vorliegende Beispiel beträgt der Anteil der gemeinsamen Varianz 62.89%.
+
+# 8) Berechnung der Effektstärke
+
+Um zu bestimmen, wie gross der gefundene Zusammenhang ist, kann man sich an der Einteilung von Cohen (1992) orientieren:
+
+```{r}
+sprintf("Die Effektstärke liegt bei %.4f.",test$estimate)
+```
+Damit entspricht ein Korrelationskoeffizient(r) von .7930 einem starken Effekt.
+
+# 9) Die Aussage
+
+Der Herzgewicht und der Körpergewicht korrelieren signifikant (r = 0.7930296, p-value < 2.2e-16, n = 97). Je höher der Herzgewicht, detso höher war der Körpergewicht. 62.89% der Streuung der gemeinsamen Varianz kann durch der Herzgewicht und der Körpergewicht erklärt werden. Dabei handelt es sich nach Cohen (1992) um einen starken Effekt. H0 kann verworfen werden.

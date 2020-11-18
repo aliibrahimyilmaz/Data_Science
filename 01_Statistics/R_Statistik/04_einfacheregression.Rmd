@@ -1,0 +1,189 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# https://alfatraining.wawerda.de/einfacheregression.php
+# https://alfatraining.wawerda.de/Videolernen/Regression/Umsetzung.php
+# http://www.r-tutor.com/elementary-statistics/simple-linear-regression/standardized-residual
+# https://www.youtube.com/watch?v=UVWJYAgX5Es&list=LLXvmP1Stu3XClDSZI7Bdgjg&index=83
+### DAS THEMA: einfache Regression 
+
+Regressionsmodell: y = β0 + β1*x + ε
+mit
+y = Wert der abhängigen Variable pro Erhebung
+x = Wert der unabhängigen Variable pro Erhebung
+ε = Fehlerterm pro Erhebung
+β0 und β1 = Regressionskoeffizienten
+
+ÜBUNG: Viele Menschen behaupten, dass die Nebenkosten eine Art zweite Miete darstellen. Im Rahmen dieser Regression soll untersucht, ob dieser Wahrnehmung stimmt. Dazu wurden 100 Teilnehmern befragt. Sie haben ihre Kaltmiete, Warmmiete und Nebenkosten pro m² angeben. In einen zweiten Schritte wurde die Kaltmiete und die Nebenkosten ins Verhältnis gesetzt. Daher wird im Weitern von Prozentpunkten gesprochen.
+
+Der zu analysierende Datensatz enthält daher neben einer ID(ID) eine Variable, die den Nettowarmmiete (Nettwarmmiete) und Kaltmiete(Nettokaltmiete), soswie die Variablen(Nebenkosten), und Nettokosten in Prozent (Nebenkosten_Prozent_von_KaltMiete).
+
+# 1)	Hypothese:
+
+ungerichtete Zusammenhangshypothese:
+
+H1: Es gibt einen Zusammenhang zwischen der Nettowarmmiete(Netto_Warmmiete) und der Nettokosten in Prozentpunkten (Nebenkosten_Prozent_von_KaltMiete).
+
+H0: Es gibt keinen Zusammenhang zwischen der Nettowarmmiete(Netto_Warmmiete) und der Nettokosten in Prozentpunkten (Nebenkosten_Prozent_von_KaltMiete).
+
+# 2)	Voraussetzungen der einfachen Regressionsanalyse
+
+Die abhängige und die unabhängige Variable sind intervallskaliert. UV Nettowarmmiete ist metrisch und die AV Nebenkosten_Prozent_von_KaltMiete ist ebenfalls metrisch.
+
+Linearität des Zusammenhangs: Es wird ein linearer Zusammenhang zwischen der abhängigen und der unabhängigen Variablen modelliert. <-siehe Scatterplot und Pearson
+
+Unabhängigkeit des Fehlerwerts: Die Fehlerwerte hängen nicht voneinander ab. <- siehe Homoskedastizität
+
+Normalverteilung des Fehlerwerts: Die Fehlerwerte sind näherungsweise normalverteilt. <- siehe Histogramm
+
+# 3)	Grundlegende Konzepte: Was ist einfache Regression?
+Die einfache Regressionsanalyse oder bivariate Regression wird angewendet, wenn geprüft werden soll, ob ein Zusammenhang zwischen zwei intervallskalierten Variablen besteht. Ziel ist das Zurückgehen von der abhängigen Variable y auf die unabhängige Variable x.Die abhängige Variable wird auch als "Kritieriumsvariable" und die unabhängige Variable als "Prädiktorvariable" bezeichnet.
+
+Es könne drei Arten von Fragestellungen untersucht werden:
+
+Ursachenanalyse: Gibt es einen Zusammenhang zwischen der unabhängigen und der abhängigen Variable? Wie eng ist dieser?
+Wirkungsanalyse: Wie verändert sich die abhängige Variable bei einer Änderung der unabhängigen Variablen?
+Prognose: Können die Messwerte der abhängigen Variable durch die Werte der unabhängigen Variable vorhergesagt werden?
+
+Kurz um: "Wie beeinflusst eine unabhängige Variablen die abhängige Variable?"
+
+# 4)	Prüfen der Voraussetzungen
+
+```{r}
+regression <- read_excel("einfacheregression.xlsx")
+```
+```{r}
+boxplot(regression$Netto_Warmmiete, main="Boxplot zur Warmmiete", xlab="Warmiete in Euro", ylab="Preis pro m²")
+```
+Es liegen keine Ausreißer in der Einzelbetrachtung vor.
+
+```{r}
+neben <- boxplot(regression$Nebenkosten_Prozent_von_KaltMiete, main="Boxplot zur Kosten in Prozent", xlab="Kaltmiete und  Nebenkosten ins Verhältnis", ylab="Preis pro m²")
+```
+```{r}
+neben
+```
+Es gibt einige Ausreißer. Grundsätzlich ist das für diese Auswertung eher kein Problem, da der Datensatz relativ groß ist.
+
+# Ausreißer finden und löschen
+```{r}
+ausreisser <- neben$out
+ausreisser
+```
+```{r}
+# Diese Zeilen sollen entfernt werden
+drops <- c(21)
+```
+```{r}
+# Zeilen löschen
+loeschen <- regression[-drops,]
+View(regression)
+```
+# Descriptive Statistik:
+
+Für die deskriptive Statistik empfiehlt es sich das Package “psych” zu verwenden.
+
+```{r}
+describe(regression)
+```
+Die Warmmiete liegt bei 21.05 Euro pro m²(SD=6.06, n= 100). Der Anzahl der Kosten ins Verhätnis legt bei 50 Prozentpunkten (SD= .39, n= 100). Es zeigt sich, dass der Anzahl der Prozentpunkt nach oben verschoben ist (Median=.40).
+
+# Scatterplot und Pearson:
+
+Es gilt anzumerken, dass auch nicht-lineare Zusammenhänge zwischen y und x mittels Regressionsanalyse untersucht werden können. Dazu wird der Zusammenhang vor der Regressionsanalyse derart transformiert, dass er linear wird. Dies geschieht durch eine Transformation von y und/oder x. Anschliessend wird nicht der Zusammenhang zwischen y und x modelliert, sondern zwischen den allenfalls transformierten Variablen.
+
+```{r}
+plot( regression$Nebenkosten_Prozent_von_KaltMiete ~ regression$Netto_Warmmiete, main= "Streudiagramm Warmmiete und Kosten ins Verhältnis", xlab = "Warmmiete" , ylab="Kaltmiete und die Nebenkosten ins Verhältnis (in %)")
+abline(lm(Nebenkosten_Prozent_von_KaltMiete ~ Netto_Warmmiete, data = regression), col="tomato")
+```
+Das Streudiagramm lässt für das Beispiel einen negativen Zusammenhang vermuten. Damit scheint die Voraussetzung, dass der Zusammenhang an sich linear ist, erfüllt.
+
+```{r}
+test <- cor.test(regression$Netto_Warmmiete, regression$Nebenkosten_Prozent_von_KaltMiete)
+test
+```
+Der R-Output in Abbildung gibt den Korrelationskoeffizienten sowie den p-Wert (Signifikanz) und die Stichprobengrösse n wieder. Es wird ersichtlich, dass ein Zusammenhang vorliegt zwischen Warmniete und Nebenkosten in Prozent(r = -0.3763, p= .000113, n = 100). Da r einen negativen Wert aufweist, kann von einem negativen, linearen und signifikanten Zusammenhang zwischen Warmmiete und Kosten in Prozent ausgegangen werden.
+
+Da der Korrelation mittelstark und signifikant ist, ist es sinnvoll eine Regression durchzuführen zur Prüfung der Kausalität.
+
+# Homoskedastizität:
+```{r}
+regression1 <-  lm(regression$Nebenkosten_Prozent_von_KaltMiete ~ regression$Netto_Warmmiete )
+
+zpred <- scale(fitted(regression1), center = T, scale = T)
+sres <-rstandard(regression1)
+
+plot (x=zpred, y=sres, main = "Streudiagramm der Residuen", 
+      xlab ="Regression: Standardisierter geschätzter Wert", 
+      ylab = "Regression: Standardisiertes Residuum",
+      col = "darkblue")
+
+abline (a=0, b=0)
+```
+Bei der optischen Prüfung der Daten prüfen wir auf Homoskedastizität. Unsere Daten lassen auf Homoskedastizität schließen. Das wäre nicht der Fall, wenn die Daten eher Trompetenform sich darstellen. Gerne kann hier großzügig gearbeitet werden.
+
+# Histogramme:
+```{r}
+hist (sres, freq = T, breaks = 10, main ="Verteilung des Fehlerwerts", xlab= "Regression: Standardisiertes Residuum", ylab="Häufigkeiten", xlim = c(-3,5),ylim = c(0,40), col = "lightblue" )
+```
+Zur Überprüfung, ob das Regressionsmodell insgesamt signifikant ist, wird ein F-Test durchgeführt. Dieser prüft, ob die Vorhersage der abhängigen Variablen durch das Hinzufügen der unabhängigen Variablen verbessert wird. Das heisst, der F-Test prüft, ob das Modell insgesamt einen Erklärungsbeitrag leistet.
+
+```{r}
+regression1 <-  lm(regression$Nebenkosten_Prozent_von_KaltMiete ~ regression$Netto_Warmmiete )
+
+reg <- summary(regression1)
+reg
+```
+Hinweis -> Zuerst die abhängige Varibale nennen und dann die unabhängige Varibale. In unserem Beispiel ist die AV = Nebenkosten_Prozent_von_KaltMiete und die UV = Warmmiete
+
+
+# 5)	Signifikanz des Regressionsmodells
+
+Das Gesamtmodell wird signifikant(F(1,98)=16.19, p = .0001, n=100)
+
+# 6)	Signifikanz der Regressionskoeffizienten und die Regressionsgrade
+
+Abbildung zeigt, dass die t-Tests für den Regressionskoeffizienten von Netto_Warmmiete (t = -4.023, p = .000) und die Konstante (d.h. der Y-Achsenabschnitt; t = 1.011, p = .000) signifikant ausfallen. Eine signifikante Konstante bedeutet, dass der Y-Achsenabschnitt nicht 0 beträgt und damit die Regressionsgerade nicht durch den Ursprung geht.
+
+Der signifikante Koeffizient von Nebenkosten_Prozent_von_KaltMiet bedeutet, dass der Regressionskoeffizient von Nebenkosten_Prozent_von_KaltMiet nicht 0 ist und Netto_Warmmiete somit einen signifikanten Einfluss auf Nebenkosten_Prozent_von_KaltMiete aufweist. Somit ergibt sich folgende Regressionsgerade:
+
+NebenkostenProzentvonKaltMiete=1.011465−0.024114∗NettoWarmmieteNebenkostenProzentvonKaltMiete=1.011465−0.024114∗NettoWarmmiete
+
+Der Koeffizient der unabhängigen Variable Netto_Warmmiete wird wie folgt interpretiert: Wenn Warmmiete um eine Einheit steigt (ein zusätzlicher Euro), so sinkt die Nebenkosten_Prozent_von_KaltMiete um 0,024 Einheiten zu (also um 2,4 Prozentpunkte).
+
+# Bestimmtheitsmaß R2:
+
+```{r}
+reg$adj.r.squared
+
+```
+Das sogenannte “R-Quadrat” wird auch als “Bestimmtheitsmass” bezeichnet. Es zeigt, wie gut das geschätzte Modell zu den erhobenen Daten passt. R-Quadrat beschreibt, welcher Anteil der Gesamtstreuung in der abhängigen Variable durch die unabhängige Variable erklärt werden kann. R-Quadrat kann Werte zwischen 0 und 1 annehmen. 0 bedeutet, dass das Modell keine Erklärungskraft besitzt, 1 bedeutet, dass das Modell die beobachteten Werte perfekt vorhersagen kann. Je höher der R-Quadrat-Wert, desto besser also die Passung zwischen Modell und Daten (daher engl. “Goodness of fit”).
+
+R-Quadrat wird von der Anzahl der unabhängigen Variablen im Modell beeinflusst. Dies ist im Falle der multiplen Regression problematisch, da mehrere unabhängige Variablen in das Modell einbezogen werden. Hier steigt das R-Quadrat mit der Anzahl der unabhängigen Variablen, auch wenn die zusätzlichen Variablen keinen Erklärungswert haben. Daher wird R-Quadrat nach unten korrigiert (“Korrigiertes R-Quadrat”). Diese Korrektur fällt umso grösser aus, je mehr Variablen im Modell sind, aber umso kleiner, je grösser die Stichprobe ist. Der R-Output enthält immer R-Quadrat und das korrigierte R-Quadrat. Auch im Falle der einfachen Regression, wo nur eine unabhängige Variable im Modell ist, wird in der Regel das korrigierte R-Quadrat berichtet.
+
+Im vorliegenden Beispiel beträgt das R-Quadrat .133, was bedeutet, dass 13.3% der Gesamtstreuung in Nebenkosten_Prozent_von_KaltMiete durch Netto_Warmmiete erklärt werden kann.
+
+# 7)	Berechnung der Effektstärke
+
+Um die Bedeutsamkeit eines Ergebnisses zu beurteilen, werden Effektstärken berechnet. Im Beispiel wird 13.3% der Gesamtstreuung in der abhängigen Variable durch die unabhängige Variable erklärt, doch es stellt sich die Frage, ob dies hoch genug ist, um als bedeutend eingestuft zu werden.
+
+Es gibt verschiedene Arten die Effektstärke zu messen. Zu den bekanntesten zählen die Effektstärke von Cohen (d) und der Korrelationskoeffizient (r) von Pearson. Der Korrelationskoeffizient eignet sich sehr gut, da die Effektstärke dabei immer zwischen 0 (kein Effekt) und 1 (maximaler Effekt) liegt.
+
+Das R-Quadrat, das bei Regressionsanalysen ausgegeben wird, kann in eine Effektstärke f nach Cohen (1988) umgerechnet werden. In diesem Fall ist der Wertebereich der Effektstärke zwischen 0 und unendlich.
+
+```{r}
+f<- sqrt(reg$adj.r.squared/ (1-reg$adj.r.squared))
+f
+```
+Um die Stärke dieses Effekts zu beurteilen, eignet sich die Einteilung von Cohen (1988):
+
+f = .10 entspricht einem schwachen Effekt
+f = .25 entspricht einem mittleren Effekt
+f = .40 entspricht einem starken Effekt
+
+Damit entspricht die Effektstärke von 0.39 einem starken Effekt.
+
+# 8)	Eine Aussage
+
+Die Höhe der Nettowarmmiete (Nettowarmmiete) hat einen Einfluss darauf, wie hoch die Nebenkosten in Prozent von Kaltmiete (Nebenkosten_Prozent_von_KaltMiete) sind(F(1, 95) = 16.19 p = .000, n = 100). Mit dem einem Euro mehr an der Warmmiete sinken die Nebenkosten in Prozent um 2,4 Prozentpunkte. 13.3% der Streuung des Nebenkosten in Prozent an der Kaltmiete wird durch die Warmmiete erklärt, was nach Cohen (1988) einem starken Effekt entspricht. H0 kannn verworfen werden.
