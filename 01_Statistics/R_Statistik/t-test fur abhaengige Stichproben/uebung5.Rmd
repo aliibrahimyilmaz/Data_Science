@@ -1,0 +1,194 @@
+---
+title: "t-Test fuer zwei verbundene Stichproben"
+output: html_notebook
+---
+
+## Packages
+
+```{r}
+library(car)# -> QQ - Diagramm & Scatterplot
+
+library(psych) # -> Deskriptive Statistiken
+```
+
+
+
+## Roadmap 
+
+1) Hypothese
+2) Voraussetzungen des t-Tests für abhängige Stichproben
+3) Grundlegende Konzepte: Was ist t-Test für abhängige Stichproben?
+4) Deskriptive Statistiken und Korrelation
+5) Ergebnisse des t-Tests für abhängige Stichproben
+6) Berechnung der Effektstärke
+7) Eine Aussage 
+
+
+
+
+# Hypothese
+
+H1: Es gibt einen Unterschied zwischen der IQ der Zwillinge (Aufwachen bei den biologischen Eltern vs. Aufwachen bei den Adoptiveltern).<br>
+
+H0: Es gibt keinen Unterschied zwischen der IQ der Zwillinge (Aufwachen bei den biologischen Eltern vs. Aufwachen bei den Adoptiveltern).
+
+# Voraussetzungen des t-Tests für abhängige Stichproben
+
+Die abhängige Variable ist intervallskaliert -> Ja -> IQ
+
+Es liegen zwei verbundene Stichproben oder Gruppen vor, aber die verschiedenen Messwertpaare sind voneinander unabhängig. 1) Sie sind verbundenen durch ihre DNA, 2) aber unabhängige, weil es zwei verschiedene Menschen sind.
+
+Die Unterschiede zwischen den verbundenen Testwerten sind in der Grundgesamtheit normalverteilt (bei Stichproben > 30 sind Verletzungen unproblematisch) -> siehe Histogramm
+
+### Erzeuge der neuen Variable "Differenz"
+
+```{r}
+# Differenz ausrechnen
+zwischen <- uebung5$IQbio - uebung5$IQfoster
+
+
+# Die Spalte "Differenz" wird zum Datensatz hinzugefügt
+uebung5 <- cbind(uebung5, "Differenz" = zwischen)
+View(uebung5)
+
+```
+
+
+```{r}
+
+# Eine Spalte löschen
+
+#uebung5$Differenz <- NULL
+#View(uebung5)
+
+# Falls es Probleme gibt
+
+uebung5$Differenz <- as.numeric(uebung5$Differenz)
+```
+
+
+
+
+##  Prüfung der Verteilung
+
+### Variante 1: Histogramm zur Prüfung des Normalverteilung
+
+
+```{r}
+hist(uebung5$Differenz, xlab = "Differenz zwischen IQ der Zwillinge", ylab= "Anzahl", main ="Histogramm der Differenz", breaks = 7,  col = "hotpink3")
+
+```
+Der Mitte ist bauchig und die Ränder sind niedriger. Allersdings ist die einschätzung nicht eindeutig. Daher kann ein QQ-Plot zur bessern Einschätzung verwendet werden.
+
+
+
+### Variante 2:  QQ-Diagramm zur Prüfung des Normalverteilung
+
+Die Werte werden der Größe nach geordnet. Als Vergleich dienen die Quantile der theoretischen Verteilung, die dem entsprechenden Verteilungswert zugehören.
+Wenn die Merkmalswerte aus der Vergleichsverteilung stammen, stimmen die empirischen und die theoretischen Quantile annähernd überein, d. h. die Werte liegen auf einer Diagonalen.
+
+Große systematische Abweichungen von dieser Diagonalen geben einen Hinweis darauf, dass sich die theoretische und empirische Verteilung voneinander unterscheiden. 
+DSie Werte müssen entlang einer aufsteigenden Gerade liegen, sodass eine ähnliche Verteilung vermutet werden kann.
+
+```{r}
+# library(car) -> QQ - Diagramm 
+
+qqPlot(uebung5$Differenz, main = "QQPlot für die Var. Differenz")
+
+```
+
+Es liegt eine  Normalverteilung vor. 
+
+
+# Deskriptive Statistiken und Korrelation
+
+## Korrelation
+
+#### Streudiagramm
+
+Ein Streudiagramm, auch Punktwolke genannt (engl. scatter plot), ist die graphische Darstellung von beobachteten Wertepaaren zweier statistischer Merkmale. Diese Wertepaare werden in ein kartesisches Koordinatensystem eingetragen, wodurch sich eine Punktwolke ergibt.
+
+```{r}
+scatterplot(uebung5$IQbio ~ uebung5$IQfoster , main = "Streudiagramm für die beiden IQ-Werte", xlab = "Zwilling ist bei den biologischen Eltern aufgewachen.", ylab= "Zwilling ist bei den Adoptiveltern aufgewachen.")
+
+```
+
+Es liegt eine positiver-linearer Zusammenhang vor. 
+
+#### Korrelation nach Bravais-Pearson
+
+Der Korrelationskoeffizient kann nur Werte im Bereich zwischen -1 und +1 annehmen. Ist er kleiner als Null (r < 0), so besteht ein negativer linearer Zusammenhang. Bei einem Wert grösser als Null (r > 0) besteht ein positiver linearer Zusammenhang und bei einem Wert von Null (r = 0) besteht kein Zusammenhang zwischen den Variablen.
+
+```{r}
+test <- cor.test(uebung5$IQbio , uebung5$IQfoster)
+test
+
+```
+
+**Hinweis:** Es ist es wichtig, dass die Daten miteinander korrelieren. Es ist plausibel, dass zwei verbundene Daten sich ähnlich sind und dass innerhalb eines Messwertpaares eher geringere Unterschiede auftreten als zwischen den Paaren. 
+
+
+Es wird ersichtlich, dass ein Zusammenhang zwischen IQBio und IQfoster(r = .88, p = .000, n = 27)vorliegt. Da r einen positiven Wert aufweist, kann von einem positiven linearen und signifikanten Zusammenhang zwischen IQBio und IQfoster ausgegangen werden. Für das Beispiel ergibt sich eine starke Korrelation von r = .88.
+
+## Deskriptive Statistiken
+
+```{r}
+#library(psych)
+describe(uebung5)
+```
+
+Es zeigt sich, dass es einen Mittelwertsunterschied zwischen IQBio und IQForster sehr gering ausfällt.
+
++ IQBio:(M= 95.11, SD = 16.08, n= 27),
++ IQBFoster: (M=95,30, SD = 15.74, n= 27)
+
+Daher liegt die Vermutung nahe, dass keine Unterschied zwischen den IQs besteht.
+
+# Ergebnisse des t-Tests für abhängige Stichproben
+
+
+**alternative = "two.sided"**  verwendet eine ungerichtete Hypothese und testet zweiseitig. Falls die Hypothese gerichtet formuliert ist, kann auch "less" oder "greater" verwendet werden. Die Richtung hängt von der Codierung ab. 
+
+**paired = TRUE** ist dann abzuwenden, wenn die Stichprobe verbunden ist. Das **"conf.level = .95"** beschreibt, dass ein Alphanivau von 0.05 verwendet wird. 
+
+```{r}
+testVER<- t.test(uebung5$IQbio , uebung5$IQfoster, alternative = "two.sided", paired = TRUE, conf.level = .95)
+
+testVER
+
+```
+
+
+Die Teststatistik beträgt t = -0.12438 und der zugehoerige Signifikanzwert p = .902. Damit gibt es keinen signifikanten Unterschied. Die Mittelwertsunterschiede der beiden IQs können zufälliger Natur sein (t(26) = -0.12438, p = .902, n= 7).
+
+
+# Berechnung der Effektstärke
+
+Die Effektstärke ist ein Maß für die Stärke eines Treatments bzw. Phänomens. Effektstärken sind damit eine der wichtigsten Größen in empirischen Studien. Zur Einschätzung der praktischen Bedeutsamkeit existieren verschiedene Effektstärkemaße, die bei der Interpretation der Größe eines Effektes helfen.
+
+$$r=\sqrt{\frac{t^2}{t^2+df}}$$
+
+
+```{r}
+eff1 <- abs(sqrt(testVER$statistic ^2/ (testVER$statistic^2 + testVER$parameter)))
+
+sprintf("Effektstärke: %.4f",eff1)
+```
+
+
+Zur Beurteilung der Groesse des Effektes dient die Einteilung von Cohen (1992):
+
+r = .10 entspricht einem schwachen Effekt
+r = .30 entspricht einem mittleren Effekt
+r = .50 entspricht einem starken Effekt
+
+Damit liegt kein Effektstärke vor (r= 0.02)
+
+Auf der Webseite: Statistik mit Jule werden weitere Effektstärke beschrieben und empfohlen. 
+
+
+# Eine Aussage
+
+Es zeigt sich, dass keinen statistisch signifikant unterscheiden zwischen dem IQ der Zwillingsgeschwister gibt (t(26) = -0.12438, p = .902, n= 7). 
+
+**H0 wird angenommen.**

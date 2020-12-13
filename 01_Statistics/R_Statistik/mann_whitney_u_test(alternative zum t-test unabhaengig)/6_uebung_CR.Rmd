@@ -1,0 +1,208 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+#üBUNG 6. Mann-Whitney U-Test
+
+#Beschreibung
+Bauch vs. Kopf - Welche Entscheidung ist besser? 
+Im Rahmen einer Studie soll untersucht werden, ob Bauchentscheidung im Alltag bessere Ergebnisse liefern als Kopfentscheidungen. 
+Daher wurde folgendes Experiment aufgesetzt. 
+19 Teilnehmer sollen sich für einen Jogurt entscheiden. 
+Zur Auswahl stehen 80 Sorten. 
+11 Teilnehmer entscheiden sich aus dem Bauch heraus. 
+8 Teilnehmer sollen durch Abwägung entscheiden, welcher der optimal Wahl ist. 
+Insgesamt haben die Teilnehmer 2 Minuten Zeit. 
+Schlussendlich wird der Jogurt getestet und die Entscheidung soll von 1-15 beurteilt werden. 
+Je niedriger der Wert, desto schlechter die Wahl.
+
+#Daten
+Variable1: BauchODERKopf
+Varibale2: Beurteilung
+
+
+
+μU=? => Mittelwert der U-Statistik
+σU=? =>Streuung der U-Statistik
+U=?
+n1=11
+n2=8
+R=? => Rangsummen (alle in V2 summiert)
+V1=Bauch/Kopf
+V2=1-15 =>Beurteilung: Skala von 1-15
+
+
+
+# Daten einlesen:
+
+```{r}
+library(readxl)
+uebung6 <- read_excel("uebung6.xlsx")
+View(uebung6)
+```
+
+
+# 1. Hypothese
+
+H0: Es gibt keinen Unterschied in der zentralen Tendenz zwischen Kopf- und Bauchentscheidungen im Alltag in Punkto Ergebnissen.
+
+H1: Es gibt einen Unterschied in der zentralen Tendenz zwischen Kopf- und Bauchentscheidungen im Alltag in Punkto Ergebnissen.
+
+
+#2. Voraussetzungen des Mann-Whitney-U-Tests
+
+Die abhängige Variable (Beurteilung - V2) ist mindestens ordinalskaliert 
+-> Beurteilung wurde nur einmal erfragt. Es handelt sich um eine sub. Einschätzung.
+
+Es liegt eine unabhängige Variable vor, mittels der die beiden zu vergleichenden Gruppen gebildet werden. (Kopf- vs Bauchentscheidungs-Gruppe)
+
+Charakteristika für non-parametrische Tests:
+Bei diesen Ausprägungen eignet sich der U-Test:
+=>kleine Stichproben
+=>Ausreisser
+=>ordinalskalierte Daten
+=>keine Normalverteilung
+
+#3. Grundlegende Konzepte
+
+μU=? => Mittelwert der U-Statistik
+σU=? =>Streuung der U-Statistik
+U=?
+n1=11
+n2=8
+R=? => Rangsummen (alle in V2 summiert)
+V1=Bauch/Kopf
+V2=1-15 =>Beurteilung: Skala von 1-15
+
+# 4. Deskriptive Statistik
+
+```{r}
+uebung6 %>%
+group_by(KopfODERBauch) %>%
+  summarize(Anzahl = n(), Median = median(Beurteilung)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+
+
+
+
+```{r}
+describe.by(uebung6$Beurteilung, group = uebung6$KopfODERBauch, mat = TRUE)
+```
+
+Es ist zu erkennen, dass sich der Median der beiden Gruppen unterscheidet. 
+Die Gruppe “Kopf” haben einen Median von 4.5 und die Teilnehmer “Bauch” haben einen Median von 10.0. 
+Damit beurteilen die Bauchentscheider ihre Entscheidung als besser als die Teilnehmer, die sich mit dem Kopf entschieden haben.
+
+
+# 5. Boxplot
+
+```{r}
+myColors <- c("deepskyblue", "pink2")
+boxplot(uebung6$Beurteilung ~ uebung6$KopfODERBauch , 
+    col=myColors , 
+    ylab="Beurteilung" , xlab="- Entscheidungstyp -")
+```
+Keine Ausreißer, Streuung mehr bei Bauchentscheidung, gestauchter bei Kopf.
+
+
+```{r}
+library(ggplot2)
+ggplot(uebung6, 
+       aes(x =KopfODERBauch,
+           y = Beurteilung)) +
+  geom_boxplot() +
+  theme(panel.background = element_rect(size = 0.5, fill = "grey", colour = "darkgrey", linetype='solid')
+        )+
+  labs(y="Beurteilung", x = "Entscheidungstyp")
+```
+
+Keine Ausreißer.
+
+# 6. Ergebnisse des Mann-Whitney-U-Tests
+
+
+
+In R gibt es den asymptotische Signifikanz aus, als auch eine exakte Signifikanz. 
+In Abhängigkeit von der Stichprobengrösse wird der eine oder andere Wert berichtet:
+
+Ist die Stichprobe hinreichend gross (n1 + n2 > 30), so wird die asymptotische Signifikanz verwendet.
+
+```{r}
+wilcox.test(uebung6$Beurteilung~ uebung6$KopfODERBauch, exact = FALSE)
+```
+Ist dies nicht der Fall, so wird die exakte Signifikanz verwendet.
+
+
+
+```{r}
+testwil<-  wilcox.test(uebung6$Beurteilung~ uebung6$KopfODERBauch, alternative="two.sided")#ungerichtete: alternative="two.sided"; gerichtete: alternative="greater";default exact=TRUE; 
+testwil
+```
+Der Unterschied zwischen den Gruppen ist signifikant (W = 79.5, p = .003653, n = 19).
+(Fehlermeldung: Datensatz ist <30, => exacte Signifikanz; aber R-Studio hat festgestellt, exakter Wert nicht berechenbar und macht die asymptotische Signifikanz)
+Diese Fehlermeldung kommt daher, dass mehrere Teilnehmer die gleiche Punktzahl in ihrer Beurteilung hatten und dies eine Bindung darstellt für R.
+
+# Doppelt vorkommende Daten/Ties (Verbindungen)
+
+```{r}
+library(exactRankTests)#-> U-Test
+# library(exactRankTests) -> Mann-Whitney-U-Tests
+
+test <- wilcox.exact(uebung6$Beurteilung ~ uebung6$KopfODERBauch, data=uebung6, conf.int=T, conf.level =0.95, alternative="two.sided")
+test
+```
+
+
+#7. Berechnung der Effektstärke
+
+$$
+r=\left\| \frac{z}{\sqrt{n}} \right\|
+$$
+Standard ist testwil:
+```{r}
+Zstat<-qnorm(testwil$p.value/2)
+sprintf("Z-Wert für den U-Test : %.2f", Zstat)
+```
+weniger etabliert wäre die ties rauszunehmen....wenn aber n kleiner wird, dann stärken wir künstlich r, die Effektstärke.
+
+```{r}
+daten <- nrow(uebung6)
+sprintf("Anzahl der Daten: %.f", daten)
+```
+
+```{r}
+eff <- abs(Zstat/sqrt(daten))
+sprintf("Effektstärke: %.2f", eff)
+```
+
+Zur Beurteilung der Groesse des Effektes dient die Einteilung von Cohen (1992):
+
+$$
+\begin{align}
+\text{Schwacher Effekt: } 0.10 &< ||r|| < 0.30             \\
+\text{Schwacher bis mittlerer Effekt: } 0.30 &= ||r||      \\
+\text{Mittlerer Effekt: } 0.30 &< ||r|| < 0.50             \\
+\text{Mittlerer bis starker Effekt: }0.50 &= ||r||         \\
+\text{Starker Effekt: } 0.50 &< ||r||        
+\end{align}
+$$
+
+
+Damit entspricht eine Effektstärke von .67 einem starken Effekt.
+
+#8. Eine Aussage
+
+Es gibt einen signifikanten Unterschied zwischen den Gruppen und dem Entscheidungsmodus - Mann-Whitney-U-Test (W = 79.5, p = .003653, n = 19). 
+
+Teilnehmer die Bauchentscheidungen treffen, beurteilen das Ergebnis besser
+(Median = 10.0, n = 11) als die Kopfentscheider (Median = 4,5 , n = 8). 
+Mann-Whitney-U-Test (W = 79.5, p = .003653). 
+Die Effektstärke nach Cohen (1992) liegt bei r = 0.67 und entspricht einem starken Effekt. 
+H0 kann verworfen werden.
+
+Kompakt: 
+Bauchentscheider werten ihre Entscheidungen in Punkto Joghurtsorte (Median = 10.0, n = 11) besser als Kopfentscheider (Median = 4.5 , n = 8) - Mann-Whitney-U-Test (W = 79.5, p = .003653). 
+Die Effektstärke nach Cohen (1992) liegt bei r = 0.67 und entspricht einem starken Effekt. 
+H0 kann verworfen werden.

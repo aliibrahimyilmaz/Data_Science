@@ -1,0 +1,157 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+### AUFGABE: PEARSON KORRELATION (DIAMONDS)
+
+```{r}
+library(readr)
+diamonds <- read_csv("diamonds.csv")
+diamonds
+```
+
+```{r}
+pearson <- diamonds[c("carat","price")]
+pearson
+```
+
+# Beschreibung:
+
+Gibt es einen Zusammenhang zwischen dem Gewicht einzelner Diamanten (carat) und dementsprechend Preis (price)?
+
+Variable_1: "price" in US Dollar
+
+Variable_2: "carat" Gewicht des Diamanten (eine Gewichtseinheit für Edelsteine und Perlen, entsprechend 200                     Milligramm. Zum Beispiel wiegt ein 5-Karat-Stein 1 Gramm)
+
+# 1) Hypothese
+
+H1: Es gibt einen Zusammenhang zwischen dem Gewicht einzelner Diamanten (carat) und dementsprechend Preis (price).
+
+H0: Es gibt keinen Zusammenhang zwischen dem Gewicht einzelner Diamanten (carat) und dementsprechend Preis (price).
+
+# 2) Voraussetzungen
+
+(a) Die Variablen sind mindestens intervallskaliert -> Ja, beide Variablen sind metrisch.
+
+(b) Die Variablen sind normalverteilt (n>30)-> siehe Histogramm
+
+```{r}
+h <- hist(pearson$carat, main = "Histogramm des carat", xlab = "carat", ylab ="Anzahl", col = "salmon" ,breaks = 60)
+
+x <- pearson$carat 
+
+xfit<-seq(min(x),max(x),length=40)
+yfit<-dnorm(xfit,mean=mean(x),sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="blue", lwd=2) 
+```
+
+Kommentar: Die Variable carat ist anscheinend normalverteilt. Sie zeigt eine bauchige Mitte und rechtschief. Die Variable carat ist ratioskaliert, da es sich um eine metrische Größe mit gleichmäßigen Abständen handelt.
+
+```{r}
+h <- hist(pearson$price, main = "Histogramm des price", xlab = "Price", ylab ="Anzahl", col = "lightblue" ,breaks = 60)
+
+x <- pearson$price 
+
+xfit<-seq(min(x), max(x), length=40)
+yfit<-dnorm(xfit, mean=mean(x), sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="blue", lwd=2) 
+```
+
+Kommentar: Die Variable Price ist anscheinend normalverteilt. Sie zeigt eine bauchige Mitte und rechtschief. Die Variable Price ist ratioskaliert, da es sich um eine metrische Größe mit gleichmaessigen Abständen handelt.
+
+(c) Der untersuchte Zusammenhang zwischen den Variablen muss linear sein -> siehe Streudiagramm
+
+# 3) Grundlegende Konzepte: Was ist Pearson?
+
+Die Korrelation, auch bivariate Korrelation oder Produkt-Moment-Korrelation genannt, beschreibt den Zusammenhang von zwei intervallskalierten Merkmalen/Variablen einer Zufallsstichprobe. Eine Möglichkeit, die Stärke des Zusammenhangs zu bestimmen, ist die Berechnung des Korrelationskoeffizienten r nach Bravais und Pearson. Voraussetzung ist hierbei, dass es sich um einen linearen Zusammenhang zwischen den analysierten Merkmalen handelt. Zusätzlich wird hier ein ungerichteter Zusammenhang untersucht, d.h. die Variablen sind unabhängig voneinander und folglich werden keine kausalen Aussagen gemacht.
+
+Der Korrelationskoeffizient r kann Werte zwischen -1 und +1 annehmen und ist unabhängig von der Maßeinheit. Ein Wert von -1 beschreibt eine perfekt negative Korrelation und ein Wert von +1 eine perfekt positive Korrelation. Bei r = 0 liegt kein linearer Zusammenhang zwischen den Variablen vor.
+
+Bei einer Korrelation wird der ungerichtete lineare Zusammenhang zweier Variablen untersucht. "Ungerichtet" bedeutet, dass nicht von einer abhängigen und einer unabhängigen Variable gesprochen wird. Es werden folglich keine kausalen Aussagen gemacht.
+
+Die Fragestellung einer Korrelation wird oft so verkürzt:
+"Gibt es einen Zusammenhang zwischen zwei Variablen?"
+
+Scheinkorrelation bezeichnet den scheinbaren kausalen Zusammenhang zwischen korrelierenden Variablen, der zwar statistisch existent ist, aber nicht auf ein Ursache-Wirkungsprinzip zurückgeführt werden kann. Beispielsweise steigt die Häufigkeit von Krankenhausbesuchen mit dem Nettoeinkommen an. Ursache hinter diesem Phänomen ist aber wahrscheinlich nicht das Einkommen, sondern das Alter der Befragten. Ältere Menschen verdienen im Schnitt mehr als jüngere Menschen – und sind gleichzeitig anfälliger für Erkrankungen und Beschwerden.
+
+# 4) Grafische Veranschaulichung des Zusammenhangs -> Streudiagramm
+
+-erste Variante:
+```{r}
+plot(pearson$price ~ pearson$carat, main = "Streudiagramm zwischen price und carat", xlab = "carat", ylab= "price", col="blue")
+abline(lm(pearson$price ~ pearson$carat, data = pearson), col="red")
+```
+- zweite Variante:
+```{r}
+library(car)
+```
+```{r}
+scatterplot(pearson$price ~ pearson$carat, main = "Streudiagramm zwischen price und carat", xlab = "carat", ylab= "price")
+```
+
+- dritte Variante:
+```{r}
+library(ggplot2)
+```
+```{r}
+ggplot(pearson, aes(x = carat, y = price)) + geom_point(size = 3) + geom_smooth(method = "lm", col = "red")
+```
+Das Streudiagramm in Abbildung zeigt eine tendenziell positive lineare Beziehung zwischen den beiden Variablen. Das heisst, die beiden Variablen korrelieren vermutlich. Da die Korrelationsanalyse einen ungerichteten Zusammenhang untersucht, lässt er sich auf zwei Weisen ausformulieren: Je größer der carat ist, desto höher ist der Preis einer Diamant, oder je höher der Preis ist, desto größer ist der carat.
+
+# 5) Deskriptive Statistik
+```{r}
+library(psych)
+```
+```{r}
+describe(pearson)
+```
+Abbildung können die Mittelwerte und Standardabweichungen der Variablen "carat" und "price" abgelesen werden. Im Mittel liegt der "carat" der Diamanten bei 0.8 (SD = 0.47, n=53940). Der Preis liegt durchschnittlich bei $3932.8 (SD = 3989.44, n=53940).
+
+# 6) Ergebnisse der Korrelationsanalyse
+
+```{r}
+test <- cor.test(pearson$price, pearson$carat)
+test
+```
+Der R-Output in Abbildung gibt den Korrelationskoeffizienten sowie den p-Wert (Signifikanz) und die Stichprobengrösse n wieder. Es wird ersichtlich, dass ein Zusammenhang vorliegt zwischen "carat" und "price" (r = .92, p < 2.2e-16, n = 53940). Da r einen positiven Wert aufweist, kann von einem positiven linearen und signifikanter Zusammenhang zwischen "carat" und "price" ausgegangen werden. Das bedeutet: Je großer der carat, desto höher ist der Preis einer Diamant.
+
+Hinweis: “p-value < 2.2e-16”: Diese Zahle hat umgrechnet 16 Nullen 0.000000000000000022. Aus der deskriptive Statistik kannst die Anzahl der Datensatze entnehmen.
+
+# 7) Berechnung des Bestimmtheitsmasses
+
+Aus der Korrelation lässt sich durch Quadrieren das Bestimmtheitsmass berechnen:
+
+Bestimmtheitsmasses=r**2∗100=0.8493∗100
+
+```{r}
+rbestimmt <- test$estimate^2*100
+sprintf("Das Bestimmtheitsmaß liegt bei %.2f Prozent.", rbestimmt)
+```
+
+Wird dieser Wert mit 100 multipliziert, so ergibt sich ein Prozentwert. Dieser gibt an, welcher Anteil der Varianz in beiden Variablen durch gemeinsame Varianzanteile determiniert wird. Für das vorliegende Beispiel beträgt der Anteil der gemeinsamen Varianz 84.93%.
+
+# 8) Berechnung der Effektstärke
+
+Um die Bedeutsamkeit eines Ergebnisses zu beurteilen, werden Effektstärken berechnet. Im Beispiel ist die Korrelation der beiden Variablen signifikant, doch es stellt sich die Frage, ob der Zusammenhang gross genug ist, um ihn als bedeutend einzustufen. Der Korrelationskoeffizient r von Bravais-Pearson stellt selbst ein Mass für die Effektstärke dar.
+
+Um zu bestimmen, wie gross der gefundene Zusammenhang ist, kann man sich an der Einteilung von Cohen (1992) orientieren:
+
+$$\begin{align}
+\text{Schwacher Effekt: } 0.10 &< ||r|| < 0.30             \\
+\text{Schwacher bis mittlerer Effekt: } 0.30 &= ||r||      \\
+\text{Mittlerer Effekt: } 0.30 &< ||r|| < 0.50             \\
+\text{Mittlerer bis starker Effekt: }0.50 &= ||r||         \\
+\text{Starker Effekt: } 0.50 &< ||r||        
+\end{align}$$
+
+```{r}
+sprintf("Die Effektstärke liegt bei %.4f.", test$estimate)
+```
+
+Damit entspricht ein Korrelationskoeffizient(r) von .9216 einem starken Effekt.
+
+# 9)  Aussage
+
+Der "carat" (200 Milligramm = 1 carat) und der Preis einer Diamant korrelieren signifikant (r = .9216, p <2.2e-16, n = 53940). Je höher der carat einer Diamant, desto höher ist der Preis einer Diamant. 84.93% der Streuung der gemeinsamen Varianz kann durch "carat" und "price" erklärt werden. Dabei handelt es sich nach Cohen (1992) um einen starken Effekt. H0 kann verworfen werden, H1 angenommen.

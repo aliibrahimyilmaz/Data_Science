@@ -1,0 +1,19 @@
+Einfache Regressionsanalyse
+
+Aufgabenstellung
+
+1) Hypothese
+2) Voraussetzungen der einfachen Regressionsanalyse
+3) Grundlegende Konzepte: Was ist einfache Regression?
+4) Prüfen der Voraussetzungen
+5) Signifikanz des Regressionsmodells
+6) Signifikanz der Regressionskoeffizienten und die Regressionsgrade
+7) Berechnung der Effektstärke
+8) Eine Aussage
+
+Beschreibung
+Viele Menschen behaupten, dass bei ihnen erst der erste Schneefall Weihnachtsgefühle weckt. Eine Forschungsgruppe möchte untersuchen, ob Schneefall tatsächlich die Weihnachtsstimmung steigert. Eine bereits veröffentlichte Studie konnte zeigen, dass die Weihnachtsstimmung durch die Anzahl gekaufter Weihnachtsdekorationsartikel operationalisiert werden kann. Die Forschungsgruppe formuliert nun die folgende Forschungsfrage: Besteht ein Zusammenhang zwischen der Anzahl schneefallreicher Tage in der Vorweihnachtszeit und dem Umsatz (in Tausend Schweizer Franken) in Dekorationsgeschäften (n = 212)? Der zu analysierende Datensatz enthält daher neben einer Identifikationsnummer des Dekorationsgeschäfts (id) eine Variable, die den Umsatz erfasst (deko), und eine, die die Anzahl Tage mit Schneefall wiedergibt (schnee).
+
+Daten
+Variable1: deko
+Varibale2: schnee

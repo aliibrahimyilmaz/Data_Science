@@ -1,0 +1,242 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# Aufgabe 12: Einfaktoriellen Varianzanalyse ohne Messwiederholung
+
+# Aufgabenstellung:
+
+Welche Musik hören Sie gerne? Diese und ähnliche Fragen werden meistens in einem lockern Smalltalk gestellt. Warum fragen wir eigentlich unser gegenüber nach dieser? Können wir Rückschlüße auf die Persönlichkeit ziehen. In Rahmen dieser Studie soll untersucht werden, ob es einen Unterschied in der Verträglichkeit zwischen den Musikstilen "Jazz", "Pop", "Elekto" und "Metal" gibt. Je höher der Verträglichkeitswert, desto "kooperativer", "harmonischer" ist eine Person.
+
+#### Daten:
+Variable1: Musikstil
+Varibale2: Vertraeglichkeit
+
+## 1) Hypothese
+
+H1: Es gibt einen Mittelwertsunterschied zwischen den Musikstilen "Jazz", "Pop", "Elekto" und "Metal" und der Verträglichkeit. M1≠M2≠M3≠M4 für min. einen Vergleich
+
+H0: Es gibt keinen Mittelwertsunterschied zwischen den Musikstilen "Jazz", "Pop", "Elekto" und "Metal" und der Verträglichkeit. M1=M2=M3=M4
+
+## 2) Voraussetzungen der einfaktoriellen Varianzanalyse ohne Messwiederholung
+
+✓ Die abhängige Variable ist intervallskaliert ->  Verträglichkeit ist metrisch
+
+✓ Die unabhängige Variable (Faktor) ist kategorial (nominal- oder ordinalskaliert) -> Die Musikstilen sind nominal-skaliert.
+
+✓ Die durch den Faktor gebildeten Gruppen sind unabhängig. Jeder Teilnehmerin hat ausschliesslich eigene Musikstil ("Jazz", "Pop", "Elekto" und "Metal").
+
+✓ Die abhängige Variablen ist normalverteilt innerhalb jeder der Gruppen (Ab > 25 Probanden pro Gruppe sind Verletzungen in der Regel unproblematisch) -> siehe Histogramm
+
+✓ Homogenität der Varianzen: Die Gruppen stammen aus Grundgesamtheiten mit annähernd identischen Varianzen der abhängigen Variablen -> siehe Levene-Test
+
+## 3) Grundlegende Konzepte: Die Grundidee der Varianzanalyse
+
+Die einfaktorielle Varianzanalyse – auch "einfaktorielle ANOVA", da in Englisch "Analysis of Variance" – testet, ob sich die Mittelwerte mehrerer unabhängiger Gruppen (oder Stichproben) unterscheiden, die durch eine kategoriale unabhängige Variable definiert werden.
+
+Die einfaktorielle ANOVA stellt eine Verallgemeinerung des t-Tests für unabhängige Stichproben für Vergleich von mehr als zwei Gruppen (oder Stichproben) dar. 
+
+Die Fragestellung der einfaktoriellen Varianzanalyse wird oft so verkürzt: "Unterscheiden sich die Mittelwerte einer unabhängigen Variable zwischen mehreren Gruppen? Welche Faktorstufen unterscheiden sich?"
+
+## 4) Boxplots
+
+```{r}
+library(readxl)
+anovaohne <- read_excel("uebung12.xlsx")
+anovaohne
+```
+
+
+```{r}
+boxplot(anovaohne$Vertraeglichkeit ~ anovaohne$Musikstil, main = "Boxplots zum Vergleich", ylab = "Vertraeglichkeit", xlab= "Musikstil" , col = c("lightgreen", "deepskyblue","tomato", "orange"))
+```
+Boxplot zeigt keine Ausreisser. Die Verteilungen scheinen sich von einander zu unterscheiden. Es gibt einen Unterschied in den zentralen Tendenz, allerdings gibts auch Überschneidungen der Werte zwischen Elektro und Pop.
+
+## 5) Normalverteilung
+
+Um einen ersten Überblick über die Daten zu gewinnen, empfiehlt es sich Histogrammm zu erstellen.
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+anovaohne %>%
+  group_by(Musikstil) %>%
+  ggplot(aes(Vertraeglichkeit, color=Musikstil)) + 
+  geom_histogram(aes(fill = Musikstil), bins = 6) +
+  facet_wrap(~Musikstil) +
+  theme_grey()+
+  labs(x= "Vertraeglichkeit", y = "Anzahl" )
+```
+Die Daten sind normalverteilt, wenn auch nicht perfekt. In diesem Beispiel zeigt es sich, dass die Normalverteilung bei "Jazz" und "Pop" zufriedenstellend ist, allerdings bei "Metal" und "Elektro" eher schwierig.
+
+Es wird entscheiden, dass eine Normalverteilung vorliegt. 
+
+#### Alternativ QQPlot:
+
+```{r}
+library(car)
+
+qqPlot(Vertraeglichkeit ~ Musikstil, data=anovaohne, 
+       layout=c(1, 4))
+```
+Die Daten sind normalverteilt.
+
+## 6) Prüfung der Varianzhomogenität (Levene-Test)
+
+Der Levene-Test prüft die Nullhypothese, dass die Varianzen der Gruppen sich nicht unterscheiden. Ist der Levene-Test nicht signifikant, so kann von homogenen Varianzen ausgegangen. Wäre der Levene-Test jedoch signifikant, so wäre eine der Grundvoraussetzungen der Varianzanalyse verletzt. Gegen leichte Verletzungen gilt die Varianzanalyse als robust; vor allem bei genügend grossen und etwa gleich grossen Gruppen sind Verletzungen nicht problematisch. Bei ungleich grossen Gruppen führt eine starke Verletzung der Varianzhomogenität zu einer Verzerrung des F-Tests. Alternativ können dann auf den den Welch-Test zurückgegriffen werden. Dabei handelt es sich um adjustierte F-Tests.
+
+```{r}
+leveneTest(anovaohne$Vertraeglichkeit ~ anovaohne$Musikstil, center="mean")
+```
+Mit Welch-Korrektur: p < 0.05 => Ergebnis Signifikant –> Varianzen heterogen
+
+Ohne Welch-Korrektur: p > 0.05 => Ergebnis nicht Signifikant –> Varianzen homogen –> H0 mit Annahme Var1=Var2=… -> Var_n wird angenommen
+
+Im vorliegenden Beispiel ist der Levene-Test signifikant(F(3, 259) = 13.936, p = .000), so dass von Varianzhetrogenität ausgegangen werden kann. Das heisst - es muss eine Welch-Korrektur durchgeführt werden.
+
+## 7) Deskriptive Statistiken
+
+Die Tabelle in Abbildung gibt die Mittelwerte, Standardabweichungen und Grössen aller drei Gruppen wieder. Diese Informationen werden für die Berichterstattung verwendet.
+
+```{r}
+anovaohne %>%
+group_by(Musikstil) %>%
+  summarize(Anzahl = n(), Mittelwert = mean(Vertraeglichkeit), Median = median(Vertraeglichkeit), Standardabweichung = sd(Vertraeglichkeit)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+
+Es gibt einen Mittelwertsunterschied zwischen den Gruppen. Metal (M = 4.27, SD = 0.82, N=64) zeigt die besten Vertraeglichkeit, gefolgt von Pop (M = 2.86, SD =	1.18, N=59) und Elektro (M = 2.80, SD =	0.79, N=54) . Wie bereits beim Boxplot zu erkennen war, ist der Abstand der Mittelwert bei Jazz (M = 1.03, SD = 0.71, N=86) niedrig.
+
+## 8) Ergebnisse der einfaktoriellen Varianzanalyse
+
+### ohne Welch-Korrektur:
+
+```{r}
+ANOVA <- aov(data=anovaohne, anovaohne$Vertraeglichkeit ~ anovaohne$Musikstil)
+summary(ANOVA)
+```
+
+### mit Welch-Korrektur:
+
+```{r}
+ANOVAmitWelch <- oneway.test(anovaohne$Vertraeglichkeit ~ anovaohne$Musikstil)
+ANOVAmitWelch
+```
+
+Das Gesamtmodel ist signifikant geworden (F(3, 131.04) = 221.33, p = .000). Allerdings lässt sich aufgrund dieses Tests nicht bestimmen, welche der vier Gruppen sich signifikant voneinander unterscheiden. Es ist denkbar, dass sich lediglich ein Paar signifikant unterscheidet und zwischen den übrigen keine signifikanten Unterschiede vorliegen. Daher wird ein Post-hoc-Test durchgeführt.
+
+## 9) Post-hoc-Tests
+
+Obwohl der F-Test zeigt, dass ein Haupteffekt von Musikstil auf Vertraeglichkeit besteht, muss anhand von Post-hoc-Tests geklärt werden, zwischen welchen Faktorstufen (Musikstil) signifikante Unterschiede bezüglich der Vertraeglichkeit bestehen.
+
+Bei der Berechnung von Post-hoc-Tests wird im Prinzip für jede Kombination von zwei Mittelwerten ein t-Test durchgeführt. Die Formel zur Berechung der Anzahl der Gruppenpaare sind: 
+
+$$k = g(g-1)/2$$
+
+Im aktuellen Beispiel mit 4 Gruppen sind dies 6 Tests. Multiple Tests sind jedoch problematisch, da der Alpha-Fehler (die fälschliche Ablehnung der Nullhypothese) mit der Anzahl der Vergleiche steigt.
+
+Wird nur ein t-Test mit einem Signifikanzlevel von .05 durchgeführt, so beträgt die Wahrscheinlichkeit des Nicht-Eintreffens des Alpha-Fehlers 95 Prozent. Werden jedoch sechs solcher Paarvergleiche vorgenommen, so beträgt die Nicht-Eintreffens-Wahrscheinlichkeit des Alpha-Fehlers (.95)^6 = .735. Um die Wahrscheinlichkeit des Eintreffens des Alpha-Fehlers zu bestimmen, wird 1 - .735 = .2649 gerechnet. Die Wahrscheinlichkeit des Eintreffens des Alpha-Fehlers liegt somit bei 26.49 Prozent. Diese Fehlerwahrscheinlichkeit wird als “Familywise Error Rate” bezeichnet.
+
+Um dieses Problem zu beheben kann zum Beispiel die Tukey angewendet werden. RStudio rechnet das neue Niveau ein, daher können wir weiter auf 0.05 testen.
+
+```{r}
+TukeyHSD(aov(data=anovaohne, anovaohne$Vertraeglichkeit ~ anovaohne$Musikstil))  # aov ist unser model
+```
+
+Es wird ersichtlich, dass sich die Musikstil "Jazz", "Metal" und einer von "Elektro" und "Pop" bezüglich Vertraeglichkeit signifikant unterscheiden (p < .05). Allerdings unterscheiden Elektro und Pop sich nicht.
+
+Es können also 2 unabhängige/ generalisierbare Gruppen und 2 abhängige/ nicht generalisierbare Gruppen (Pop-Elektro) von Musikstil gebildet werden.
+
+## 10) Plot der Mittelwerte
+
+Spannend ist auch sich die Mittelwerte hilfe dieses Plots anzeigen zu lassen.
+
+```{r}
+ggplot(anovaohne, aes(x=Musikstil, y=Vertraeglichkeit, group=1))+
+  stat_summary(fun.y = mean, geom="point", size=3)+
+  stat_summary(fun.y = mean, geom="line")+
+  stat_summary(fun.data = mean_cl_normal, geom="errorbar",width=.2, size=.25)+
+  labs(x="Musikstil", y="Vertraeglichkeit")+
+  theme_classic()
+```
+Wie der Plot in Abbildung erkennen lassen, bestehen bezüglich der Jazz, Metal und einer von Elektro und Pop Unterschiede im Mittelwert. Allerdings besteht keine Unterschiede zwischen Elektro und Pop.
+
+## 11) Berechnung der Effektstärke
+
+Es gibt **zwei Arten** eine Effektstärken für diesen Test. 
+
+### Variante 1:
+
+$$ η²= \frac{QS_{zwischen}}{QS_{total}}$$
+
+```{r}
+library(lsr) # -> Eta-Quadrat  + partielle Eta-Quadrat 
+etaSquared(ANOVA)
+```
+
+η² = .01 entspricht einem schwachen Effekt<br>
+η² = .06 entspricht einem mittleren Effekt<br>
+η² = .14 entspricht einem starken Effekt<br>
+
+Es liegt ein starker Effekt vor.
+
+#### Das partielle Eta-Quadrat:
+
+Das partielle Eta-Quadrat (partielles η2) ist ein Mass für die Effektgrösse: Es setzt die Variation, die durch einen Faktor erklärt wird, in Bezug mit jener Variation, die nicht durch andere Faktoren im Modell erklärt wird. Das heisst, es wird ausschliesslich jene Variation betrachtet, welche nicht durch die anderen Faktoren im Modell erklärt wird. Das partielle Eta-Quadrat zeigt, welchen Anteil davon ein Faktor erklärt. Im Falle der einfaktoriellen Varianzanalyse ist das partielle Eta-Quadrat ist jener Anteil der korrigierten Gesamtvariation, der durch das Modell erklärt wird.
+
+$$ η²_{\mathrm{par}}= \frac{QS_{zwischen}}{QS_{zwischen}+QS_{inn}}$$
+
+```{r}
+library(sjstats)
+eta <- eta_sq(ANOVA, partial = TRUE)
+eta
+```
+
+Hinweis: Eta kann als eigenständige Im vorliegenden Beispiel beträgt das partielle Eta-Quadrat .665. Das heisst, es wird 66.5% der Variation in Vertraeglichkeit durch Musikstil aufgeklärt.
+
+#### Variante 2, Effektstärke:
+
+Um die Bedeutsamkeit eines Ergebnisses zu beurteilen, werden Effektstärken berechnet. Im Beispiel sind zwar einige der Mittelwertsunterschiede zwar signifikant, doch es stellt sich die Frage, ob sie gross genug sind, um als bedeutend eingestuft zu werden.
+
+Es gibt verschiedene Arten die Effektstärke zu messen. Zu den bekanntesten zählen die Effektstärke von Cohen (d) und der Korrelationskoeffizient (r) von Pearson.
+
+Da R das partielle Eta-Quadrat ausgibt, wird dieses hier in die Effektstärke nach Cohen (1988) umgerechnet. 
+
+$$ f= \frac{η²_{\mathrm{par}}}{1+η²_{\mathrm{par}}}$$
+
+In diesem Fall befindet sich die Effektstärke immer zwischen 0 und unendlich.
+
+
+```{r}
+eff <- sqrt(eta$partial.etasq /(1-eta$partial.etasq))
+
+eff
+```
+
+Um zu beurteilen, wie gross dieser Effekt ist, kann man sich an der Einteilung von Cohen (1988) orientieren:
+
+f = .10 entspricht einem schwachen Effekt <br>
+
+f = .25 entspricht einem mittleren Effekt  <br>
+
+f = .40 entspricht einem starken Effekt <br>
+
+Damit entspricht eine Effektstärke von 1.40 einem starken Effekt.
+
+Hinweis: Diese Beispiel ist sehr sauber und etwas “zu” eindeutig. Damit entspricht eine Effektstärke von 1.40 einem starken Effekt.
+
+## 12) Eine Aussage
+
+Der Musikstil hat einen signifikanten Einfluss auf die Vertraeglichkeit (F(3, 131.04) = 221.33, p = .000). 66.5% der Streuung der Vertraeglichkeit-Werte um den Gesamtmittelwert kann durch die Musikstil erklärt werden. Die Effektstärke nach Cohen (1988) liegt bei f = 1.40 und entspricht einem starken Effekt.
+
+Post-hoc-Tests mit Tukey zeigen,  dass sich drei Gruppen von Musikstil bilden lassen (alle p < .05) und dass sich die Musikstil "Jazz" Jazz (M = 1.03, SD = 0.71, N=86), "Metal" (M = 4.27, SD = 0.82, N=64) und einer von "Elektro" Elektro (M = 2.80, SD =	0.79, N=54) und "Pop" (M = 2.86, SD =	1.18, N=59) bezüglich Vertraeglichkeit signifikant unterscheiden (p < .05). Allerdings unterscheiden Elektro  (M = 2.80, SD =	0.79, N=54) und Pop (M = 2.86, SD =	1.18, N=59) sich nicht. Es können also 2 unabhängige/ generalisierbare Gruppen und 2 abhängige/ nicht generalisierbare Gruppen (Pop-Elektro) von Musikstil gebildet werden.
+
+"Metal" hat eine höhere Vertraeglichkeit als die Anderen. "Jazz" hat sogar eine niedrigste Vertraeglichkeit .
+
+Damit kann festgehalten werden, dass zwei Gruppen unabhängige Gruppen bilden und sich signifikant unterscheiden. "Metal" hat die beste Vertraeglichkeit. H0 wird abgelehnt, H1 angenommen.
+
+
+
+
+

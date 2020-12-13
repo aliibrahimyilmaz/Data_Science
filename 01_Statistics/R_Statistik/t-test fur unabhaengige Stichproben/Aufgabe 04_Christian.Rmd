@@ -1,0 +1,152 @@
+---
+title: "Aufgabe 04"
+output: html_notebook
+---
+
+```{r}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(car)
+library(effsize)
+
+
+daten <- read_excel("uebung4.xlsx")
+leg = filter(daten,Legendary==TRUE)
+nor = filter(daten,Legendary==FALSE)
+farben = c("aquamarine4","chocolate3")
+binning = seq(0,200,10)
+```
+
+
+# Beschreibung
+
+Pokemon spielen macht Spaß. Jedoch macht es einen Unterschied, ob man mit einem Legendary Pokemon spielt oder nicht. Sind die Attacken stärker?
+
+## Daten
+
+Variable1: Attack
+
+Varibale2: Legendary
+
+
+
+
+# Aufgabenstellung
+
+## 1) Hypothese
+
+H0: Die physischen Attacken (Attack; Mittelwert A) von legendären Pokemon (legendary = TRUE; L) sind nicht stärker als von nicht-legendären Pokemon (legendary = FALSE; N)
+  $A_L <= A_N$
+
+H1: Die physischen Attacken (Attack; Mittelwert A) von legendären Pokemon (legendary = TRUE; L) sind stärker als von nicht-legendären Pokemon (legendary = FALSE; N)
+  $A_L > A_N$
+
+
+
+## 2) Voraussetzungen des t-Tests für unabhängige Stichproben
+
+Die unabhängige Variable lässt sich in zwei vergleichende Gruppen einteilen. &#9745; Es gibt die zwei Gruppen legendär (L) und normal (N)
+
+Die abhängige Variable ist metrisch. &#9745; Die physischen Angriffswerte (Attack) liegen als Zahlen vor.
+
+Das untersuchte Merkmal (Attack) ist in den Grundgesamtheiten der beiden Gruppen normalverteilt. &#9745; -> siehe Abbildungen unten. Die beiden Verteilungen können als normalverteilt angenommen werden.
+
+Homogenität der Varianzen: Die Gruppen kommen aus Grundgesamtheiten mit annähernd identischer Varianz -> siehe Levene-Test
+
+Die einzelnen Messwerte sind voneinander unabhängig. ?! entwickelte Pokemon haben (fast) immer einen höheren physischen Angriff als ihre Vorentwicklung. Dieser Unterschied kann im Rahmen dieser Übung vernachlässigt werden.
+
+
+
+## 3) Grundlegende Konzepte: Was ist t-Test für unabhängige Stichproben?
+
+Der t-Test für unabhängige Stichproben testet, ob die Mittelwerte zweier unabhängiger Stichproben verschieden sind.
+
+
+
+
+## 4) Deskriptive Statistiken
+
+
+```{r}
+hist(nor$Attack,breaks=binning, col=farben[1])
+hist(leg$Attack,breaks=binning, col=farben[2])
+
+
+#ggpltCmbn <- rbind(nor,leg)
+#ggplot(ggpltCmbn, aes(Attack, fill=Legendary)) + 
+#   geom_histogram(alpha = 0.5, aes(y= ..density..), position = position_dodge(width=16), breaks = seq(0,200,10)) +
+#   stat_function(fun = dnorm, args = list(mean = mean(nor$Attack), sd = sd(nor$Attack)), aes(group = 1), col=farben[1]) +
+#   stat_function(fun = dnorm, args = list(mean = mean(leg$Attack), sd = sd(leg$Attack)), aes(group = 2), col=farben[2]) + 
+#   scale_fill_manual("Legendary",values = farben) 
+
+
+ggplot(group_by(daten,Legendary), aes(Attack, fill = Legendary)) + 
+   geom_histogram(alpha = 0.5, aes(y= ..density..), position = position_dodge(width=16), breaks = binning) +
+   geom_function(fun=dnorm,args=list(mean = mean(subset(daten, Legendary == FALSE)$Attack), sd = sd(subset(daten, Legendary == FALSE)$Attack)),aes(group = 1),col=farben[1]) + 
+   geom_function(fun=dnorm,args=list(mean = mean(subset(daten, Legendary == TRUE)$Attack), sd = sd(subset(daten, Legendary == TRUE)$Attack)),aes(group = 2),col=farben[2]) + 
+   scale_fill_manual("Legendary",values = farben) 
+
+
+daten %>%
+group_by(Legendary) %>%
+  summarise(Anzahl = n(), Mittelwert = mean(Attack), Median = median(Attack), Standardabweichung = sd(Attack), .groups = 'drop') %>%
+  mutate_if(is.numeric, round, 0)
+```
+
+Für die beiden Gruppen zeigt sich ein Unterschied im mittleren phyiskalischen Angriff. Der Angriff ist für legendäre Pokemon höher (M = 117, SD = 30, n = 65) als für normale Pokemon (M = 76, SD = 30, n = 735)
+
+## 5) Test auf Varianzhomogenität (Levene-Test)
+
+```{r}
+leveneTest(daten$Attack, factor(daten$Legendary), center = mean)
+```
+
+Da der Levene-Test nicht signifikant ist (p > 0,05), können gleiche Varianzen angenommen werden (F(1;798) &asymp; 0,0031, p &asymp; 0,96). Es ist daher nicht notwendig eine Welch-Korrektur durchzuführen.
+
+
+
+
+## 6) Ergebnisse des t-Tests für unabhängige Stichproben
+
+```{r}
+test<- t.test(daten$Attack~daten$Legendary, var.eq = TRUE, con= 0.95, alt = "less")
+test
+```
+
+Die Mittelwerte der physischen Attacken von legendären und normalen Pokemon unterscheiden sich (t(798) = -10,397, p &approx; 0, n = 800)
+
+
+
+
+## 7) Berechnung der Effektstärke
+
+```{r}
+cohen.d(d=daten$Attack, f=daten$Legendary)
+```
+
+Interpretation von d nach Cohen (1988):
+$$
+\begin{align}
+\text{Schwacher Effekt: } 0.20 &< ||d|| < 0.50             \\
+\text{Schwacher bis mittlerer Effekt: } 0.50 &= ||d||      \\
+\text{Mittlerer Effekt: } 0.50 &< ||d|| < 0.80             \\
+\text{Mittlerer bis starker Effekt: }0.80 &= ||d||         \\
+\text{Starker Effekt: } 0.80 &< ||d||        
+\end{align}
+$$
+
+Die berechnete Effektstärke von 3,4 entspricht nach Cohen (1988) einem starkem Effekt.
+
+## 8) Eine Aussage
+
+Legendäre Pokemon haben stärkere physische Attacken (M = 117, SD = 30, n = 65) als normale Pokemon (M = 76, SD = 30, n = 735): t(800) = -10,397, p &approx; 0, n = 800. Die Effektstärke liegt bei 3,4 und entspricht damit einem starkem Effekt nach Cohen (1998). H0 kann verworfen werden.
+
+
+
+
+
+
+
+
+

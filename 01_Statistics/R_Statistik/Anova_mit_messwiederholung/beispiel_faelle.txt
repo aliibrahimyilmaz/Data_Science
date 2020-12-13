@@ -1,0 +1,8 @@
+ein mind.intervalskaliert AV
+mind. 3 ausprägung als UV
+
+- Besteht ein Zusammenhang zwischen täglichen Verkaufszahlen eines Produkts an verschiedenen Standorten?
+- Wie ändert sich der Koffein-Anteil in schwarzem Tee, wenn man ihn 3, 5, 10 oder 15min ziehen lässt.
+- Wie schnell fährt man im Verhältnis zur Geschwindikeitsbegrenzung nachdem man geblitzt wurde. (Messpunkte: 1 Stunde, 1 Tag, 1 Woche)
+- Wie verändert sich das Krankheitsbild im Verlauf einer Therapie mit täglicher Medikamentengabe über ein halbes Jahr? Der Patient muss 1x wöchentlich zur Visite.
+- Wie verändert sich der Energyverbrauch einer 4 -Personen Familie pro m2 im Sommer, Herbst, Winter und Frühling?

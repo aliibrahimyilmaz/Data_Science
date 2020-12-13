@@ -1,0 +1,138 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# t-Test für unabhängige Stichproben:
+
+Die Nicht-Selbstständige fühlen sich beruflich sicherer als Selbständige. Anhand eines Fragebogens "Sicherheitsgefühl (Index von 1 bis 100)" wird nun gemessen, ob sich die beiden Gruppen in ihren Sicherheitsgefühl unterscheiden. Wichtig ist je kleiner der Wert, desto unsicherer fühlen sich die Befragten. Je höher der Wert, desto sicher.
+
+Der zu analysierende Datensatz enthält neben einer Personennummer (ID) die Selbstständigsstatus (Selbstaendig) und das Ergebnis des Sicherheitsgefühl (Sicherheitsgefuehl).
+
+## 1) Hypothese
+
+H1: Es gibt einen Unterschied zwischen dem Sicherheitsgefühl von Selbstständigen und Nicht-Selbstständigen. MS≠MNS
+
+H0: Es gibt keinen Unterschied zwischen dem Sicherheitsgefühl von Selbstständigen und Nicht-Selbstständigen.MS=MNS
+
+## 2) Voraussetzungen des t-Tests für unabhängige Stichproben
+
+Die abhängige Variable ist min. intervallskaliert -> Sicherheitsgefuehl(AV)
+
+Es liegt eine unabhängige Variable vor, mittels der die beiden zu vergleichenden Gruppen gebildet werden. -> Ja, Selbstständigen und Nicht-Selbstständigen
+
+Das untersuchte Merkmal ist in den Grundgesamtheiten der beiden Gruppen normalverteilt -> siehe Histogramm
+
+Homogenität der Varianzen: Die Gruppen kommen aus Grundgesamtheiten mit annähernd identischer Varianz -> siehe Levene-Test
+
+Die einzelnen Messwerte sind voneinander unabhängig (das Verhalten einer Versuchsperson hat keinen Einfluss auf das Verhalten einer anderen) -> ist gegeben.
+
+### Prüfung der Normalverteilung mithilfe des Histogramms:
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+  t_testUN %>%
+  group_by(Selbststaendig) %>%
+  ggplot(aes(Sicherheitsgefuehl)) + 
+    geom_histogram( binwidth=4, aes(fill=Selbststaendig), color="#e9ecef", alpha=0.7 ) + # Erstelle ein Histogramm, Unterteilung, Farbe + Transparenz
+   facet_wrap(~Selbststaendig)+ # Zwei Graphen
+    theme_classic()+ #Farbschema
+    labs(x="Gruppierungen", y="Anzahl") # Beschriftung
+```
+Es liegt eine Normalverteilung von.
+
+## 3) Grundlegende Konzepte: Was ist t-Test für unabhängige Stichproben?
+
+Der t-Test für unabhängige Stichproben testet, ob die Mittelwerte zweier unabhängiger Stichproben verschieden sind.
+
+Die Fragestellung des t-Tests für unabhängige Stichproben wird oft so verkürzt:
+"Unterscheiden sich die Mittelwerte zweier unabhängiger Stichproben?"
+
+## 4) Deskriptive Statistiken
+
+```{r}
+#library(dplyr)
+t_testUN %>%
+group_by(Selbststaendig) %>%
+  summarize(Anzahl = n(), Mittelwert = mean(Sicherheitsgefuehl), Median = median(Sicherheitsgefuehl), Standardabweichung = sd(Sicherheitsgefuehl)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+Es zeigt sich für diese Fragestellung einen Mittelwertsunterschied. Das Sicherheitsgefühl bei Nicht-Selbstständigen ist höher (M = 21.00 SD = 3.7, n = 25) als bei Selbstständigen (M = 16.15 SD = 3.74, n = 26).
+
+## 5) Test auf Varianzhomogenität (Levene-Test)
+
+Der t-Test für unabhängige Gruppen setzt Varianzhomogenität voraus. Liegt Varianzheterogenität vor (also unterschiedliche Varianzen), so müssen unter anderem die Freiheitsgerade des t-Wertes angepasst werden. Ob die Varianzen nun homogen (“gleich”) sind, lässt sich mit dem Levene-Test auf Varianzhomogenität prüfen.
+
+Der Levene-Test verwendet die Nullhypothese, dass sich die beiden Varianzen nicht unterscheiden. Daher bedeutet ein nicht signifikantes Ergebnis, dass sich die Varianzen nicht unterscheiden und also Varianzhomogenität vorliegt. Ist der Test signifikant, so wird von Varianzheterogenität ausgegangen.
+
+```{r}
+library(carData)
+
+leveneTest(t_testUN$Sicherheitsgefuehl, t_testUN$Selbststaendig, center = mean)
+```
+Also es ist zuerkennen, das Homogenität vorliegt, da der Levene-Test nicht signifikant ist. Daher können wir von gleichen Varianzen ausgehen (F(1, 49) = .1566, p = .694). Es ist daher nicht notwendig eine Welch-Korrektur durchzuführen.
+
+Mit Welch-Korrektur: p < 0.05 => Ergebnis Signifikant –> Varianzen heterogen
+
+Ohne Welch-Korrektur: p > 0.05 => Ergebnis nicht Signifikant –> Varianzen homogen –> H0 mit Annahme Var1=Var2
+
+
+## 6) Ergebnisse des t-Tests für unabhängige Stichproben
+
+An dieser Stelle findet die eigentliche Auswertung des t-Testes statt. Beim t-test wird die t-Verteilung verwendet.
+
+Auch hier ist auf die Reihenfolge zu achten erst AV und dann UV. Da in diesem Beispiel eine ungerichtete Hypothese verwendet wird mit einem Sig.-Niveau von 0.05,ist “con= 0.95, alt =”two.sided"" zu verwenden. Sollten Sie sich jedoch entscheiden eine gerichtete Hypothese zu verwenden, dann empfiehlt es sich folgende Zeilen zu ersetzen “con= 0.95, alt =”greater"" Je nach Richtung “less” or “greater”. Sollte eine 1 bei p-value stehen ist es genau die andere Richtung.
+
+“Var.eq =True” bedeutet, dass die Varianzen homogen (gleich) sind, bzw. “Var.eq =False” das die Varianzen hetrogen sind.
+
+### Variante 1: ohne Welch - Korrektur:
+
+```{r}
+##Gerichtete Hypothese
+#test1<- t.test(t_testUN$Sicherheitsgefuehl~t_testUN$Selbststaendig, var.eq = TRUE, con= 0.95, alt = "greater")
+
+##ungerichtete Hypothese
+test1<- t.test(t_testUN$Sicherheitsgefuehl~t_testUN$Selbststaendig, var.eq = TRUE, con= 0.95, alt = "two.sided")
+test1
+```
+Die Teststatistik betraegt t = 4.65 und der zugehörige Signifikanzwert p = 2.513e-05. Damit ist der Unterschied signifikant:
+
+Mittelwerte der beiden Arten der Selbstständigkeit unterscheiden sich (t(49) = 4.65, p = 2.513e-05, n= 51)
+
+### Variante 2: MIT Welch-Korrektur:
+
+```{r}
+welch<- t.test(t_testUN$Sicherheitsgefuehl~t_testUN$Selbststaendig, var.eq = FALSE, con= 0.95, alt = "two.sided")
+welch
+```
+mit Welch-Korrektur(t(48.959) = 4.65, p = 2.507e-05)
+
+## 7) Berechnung der Effektstärke
+
+```{r}
+eff <- sqrt ((test1$statistic^2 )/ (test1$statistic^2 + test1$parameter))
+sprintf("Die Effektstärke liegt bei %.2f",eff )
+```
+Zur Beurteilung der Groesse des Effektes dient die Einteilung von Cohen (1992):
+
+Im Rahmen des t-Tests fuer unabhängige Stichprobe berechnen wir nach Pearson und interpretieren nach Cohen(1992).
+
+Damit entspricht eine Effektstaerke von .55 einem starken Effekt.
+
+### ALTERNATIVE Bei ungleichgroßen Gruppen:
+
+Diese Formel verwendet das EffSize-Package - Cooper et al. (2009):
+
+```{r}
+library(effsize)
+
+cohen.d(d = t_testUN$Sicherheitsgefuehl, f= t_testUN$Selbststaendig)
+```
+Interpretation von d nach Cohen (1988):
+
+Damit entspricht eine Effektstaerke von 1.3 einem starken Effekt.
+
+## 8) Eine Aussage:
+
+Nicht-Selbststaendige fühlen sich signifikant beruflich sicherer (M = 21, SD = 3.69, n = 25) als Selbständige (M = 16.15, SD = 3.73, n = 26) (t(49) = 4.6532, p = 2.513e-05, n = 51). Die Effektstärke liegt bei r = .55 und entspricht damit einem starken Effekt nach Cohen (1992). H0 kann verworfen werden.

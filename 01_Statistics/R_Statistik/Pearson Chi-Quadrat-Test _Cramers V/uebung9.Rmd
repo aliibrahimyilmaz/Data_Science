@@ -1,0 +1,272 @@
+---
+title: "Pearson Chi-Quadrat-Test | Cramers V"
+output: html_notebook
+---
+## Packages
+
+
+## Roadmap
+Pearson Chi-Quadrat-Test | Cramers V
+
+1.	Hypothese 
+
+2.	Voraussetzungen
+
+3.	Balkendiagramm
+
+4.	Kreuztabelle 
+
+5.	Erwarteten Werte 
+
+6.	X²
+
+7.	Cramers ´V
+
+8.	Aussage 
+
+
+
+
+```{r}
+library(readxl)
+uebung9 <- read_excel("uebung9.xlsx")
+#View(uebung9)
+```
+
+
+```{r}
+head(uebung9)
+```
+
+```{r}
+summary(uebung9)
+```
+
+```{r}
+str(uebung9)
+uebung9$Geschlecht <- as.factor(uebung9$Geschlecht)
+uebung9$Brille <- as.factor(uebung9$Brille)
+str(uebung9)
+```
+
+
+
+## 1.	Hypothese 
+
+H1: Es gibt einen Zusammenhang zwischen dem Geschlecht(m/w) und Bereitschaft eine Brille (ja/nein) zu tragen.<br>
+H0: Es gibt keinen Zusammenhang zwischen dem Geschlecht(m/w) und Bereitschaft eine Brille (ja/nein) zu tragen.
+
+## 2.	Voraussetzungen
+Die Variablen sind kategorial (nominal- oder ordinalskaliert)
+-> Erfüllt da beide Variablen(Geschlecht/Brille) kategorial sind.
+
+
+**1) Die Stichprobe ist > 50. 200 > 50 **
+
+*2) Ist dies nicht der Fall, so wird bei einer Stichprobe kleiner als 20 der exakte Test nach Fisher verwendet*
+
+*3) bei einer Stichprobengroesse zwischen 20 und 50 die Korrektur nach Yates.*
+
+
+
+
+```{r}
+sprintf("Anzahl der Daten: %d",nrow(uebung9) )
+```
+Es hat sich gezeigt, dass insgesamt 200 Teilnehmer befragt worden sind. 
+
+
+
+**Die Freiheitsgrade des Chi-Quadrat-Tests sind groesser als 1. Ist dies nicht der Fall, so wird die Korrektur nach Yates verwendet**
+
+$$df = (Gruppe-1)*(Gruppe-1)$$
+
+In diesem Beispiel liegt ein 2x2 Design vor. Daher liegt der df bei 1 und wir müssen nach Yates korrigieren.
+
+Die erwarteten Zellhäufigkeiten sind > 5. Ist dies nicht der Fall, so wird der exakte Test nach Fisher verwendet. --> Klärung in Punkt 5 
+
+
+## 3.	Balkendiagramm
+
+```{r}
+counts<- table(uebung9$Geschlecht, by = uebung9$Brille)
+
+barplot(counts, main="Balkendiagramm",
+col=c("deepskyblue","tomato"),
+ylab="Anzahl Personen",xlab = "Geschlecht und Brille",
+beside=T,
+names.arg =c("M-Brille","F-Brille","M-ohne-Brille", "F-ohneBrille"))
+```
+```{r}
+counts<- table(uebung9$Geschlecht, by = uebung9$Brille)
+
+barplot(counts, main="Brille und Geschlecht",
+col=c("blue","red"),
+ylab="Anzahl Personen",xlab = "Bereitschaft eine Brille",
+ylim=c(0,130),
+beside=FALSE,
+names.arg =c("Mit Brille","Ohne Brille"),
+legend=TRUE)
+```
+```{r}
+
+counts<- table( uebung9$Brille, by = uebung9$Geschlecht)
+#counts
+barplot(counts, main="Brille und Geschlecht",
+col=c("orange","lightgreen"),
+ylab="Anzahl Personen",xlab = "Geschlecht",
+ylim=c(0,130),
+beside=FALSE,
+names.arg =c("Männer","Frauen"),
+legend=TRUE)
+```
+
+
+```{r}
+kurz<- c("M-Brille","F-Brille","M-ohne-Brille", "F-ohneBrille")
+Anzahl <- c(70,40,30,60)
+brillegender <- data.frame(kurz,Anzahl)
+
+```
+ 
+ 
+```{r}
+barplot(brillegender$Anzahl, names.arg = brillegender$kurz)
+```
+ 
+## 4.	Kreuztabelle
+
+```{r}
+counts<- table( Geschlecht = uebung9$Geschlecht, Brille = uebung9$Brille)
+head(counts)
+```
+
+Wie der Tabelle zu entnehmen ist, gibt es 
+*70* Mann, die eine Brille tragen, 
+*30* Frauen, die eine Brille tragen, 
+*40* Männer, die keine Brille tragen, sowie 
+*60* Frauen, die keine Brille tragen.
+
+
+```{r}
+library("sjPlot")
+library("sjmisc")
+```
+
+```{r}
+sjt.xtab(uebung9$Geschlecht, uebung9$Brille)
+```
+
+
+## 5.	Erwarteten Werte 
+
+
+**Die erwarteten Zellhäufigkeiten sind > 5. Ist dies nicht der Fall, so wird der exakte Test nach Fisher verwendet.**
+Zur Klärung dieser Frage werden die erwarteten Werte errechnet. 
+
+$$f= \frac{Zeilensumme*Spaltensumme}{n}$$
+
+```{r}
+ch1 <- chisq.test(counts)
+ch1$expected
+```
+Wie der Tabelle entnommen, werden kann zeigt es sich, dass die erwarteten Zellhäufigkeiten größer als 5 sind, daher ist keine Anpassung nach Fisher notwendig. 
+
+
+
+```{r}
+sjt.xtab(uebung9$Geschlecht, uebung9$Brille,
+         title = "Brille und Geschlecht im Zusammenhang",
+         show.cell.prc = TRUE, show.exp = TRUE, show.legend =          T)
+```
+
+### Prozentangabe, der jeweiligen Ausprägung
+
+
+```{r}
+sjt.xtab(uebung9$Geschlecht, uebung9$Brille,
+         title = "Brille und Geschlecht im Zusammenhang",
+         show.cell.prc = TRUE, show.exp = TRUE, show.legend = 
+           T)
+```
+
+### Prozentangabe, der jeweiligen Ausprägung
+
+```{r}
+frq(uebung9$Geschlecht,
+    title = "Geschlecht ",
+    out = "viewer")
+```
+
+```{r}
+frq(uebung9$Brille, 
+    title = "Brille",
+    out = "viewer")
+```
+
+```{r}
+frq(uebung9$Brille, 
+    title = "Brille",
+    out = "viewer")
+```
+
+## 6.	$\chi^2$
+
+
+Zur Berechnung des $\chi^2$ ist eine Anpassung nach Yates notwendig, aber keine Anpassung nach Fisher. Daher wird folgender R-Code verwendet. 
+
+
+```{r}
+ergebnis<- chisq.test(counts, correct=T)
+ergebnis
+```
+An der Überschrift "Pearson's Chi-squared test with Yates' continuity correction" ist zu erkennen, das nach Yates der Chi-Wert angepasst wurden. 
+
+
+```{r}
+sprintf("kritischer Prüfwert: %.2f",qchisq(0.95, df=1))
+```
+
+**Hinweis:** $$kritische \thinspace Prüfwert < empirsche \thinspace Prüfwert  \rightarrow sig. \\ 3.84 < 16.99 \rightarrow sig$$
+        
+
+
+Es zeigt sich, dass ein sig. Ergebnis vorliegt (Chi-Quadrat(1) = 16.99, p = 3.758e-05, n = 200). Damit gibt es einen Zusammenhang zwischen dem Geschlecht und dem Tragen einer Brille. 
+
+
+## 7.	Cramers ´V
+
+```{r}
+anzahl <- nrow(uebung9)
+sprintf("Die Anzahl liegt bei %d.", nrow(uebung9))
+
+```
+
+$$ \mbox{Cramers V} = \sqrt{\frac{\chi^2}{n(2-1)}} = \sqrt{\frac{`r ergebnis$statistic`}{`r anzahl` (2-1)}}$$
+
+** Es liegt ein 2X2 Design vor.**
+
+```{r}
+cramersV <- sqrt(ergebnis$statistic/anzahl*(2-1))
+sprintf("Die Effektstärke liegt bei %.2f.", cramersV)
+```
+Cramers V liegt bei jeder Kreuztabelle unabhaengig von der Anzahl der Zellen zwischen 0 (Minimum) und 1 (Maximum)
+
+Cramers V ist immer positiv -> keine Aussage über Richtung des Zusammenhangs
+
+$$
+\begin{align}
+\text{Schwacher Effekt: } 0.1 &< ||Cramers V|| \leq  0.3 \\
+\text{Schwacher bis mittlerer Effekt: }0.3 &< ||Cramers V|| \leq  0.4 \\
+\text{Mittlerer Effekt: } 0.4 &< ||Cramers V|| < 0.5 \\
+\text{Mittlerer bis starker Effekt: }0.5 &= ||Cramers V|| \\
+\text{Starker Effekt: } 0.5 &< ||Cramers V|| 
+\end{align}
+$$
+Es zeigt sich für unsere Auswertung, dass ein schwacher Zusammenhang besteht.
+
+## 8.	Aussage 
+
+Das Geschlecht und das Tragen einer Brille steht in einem Zusammenhang (Chi-Quadrat(1)=16.99, p = 3.758e-05, n = 200). Der Zusammenhang ist schwach (Cramers V = .29). Damit kann die H0 verworfen werden.
+
+

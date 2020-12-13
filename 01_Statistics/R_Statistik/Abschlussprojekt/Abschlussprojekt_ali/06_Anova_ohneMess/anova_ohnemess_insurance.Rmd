@@ -1,0 +1,285 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# AUFGABE: Einfaktoriellen Varianzanalyse ohne Messwiederholung: ANOVA
+
+# Beschreibung:
+
+Gibt es einen Unterschied in der durchschnittlichen Kosten (charges) der Kunden in der Krankenkasse zwischen der Anzahl der Kinder?
+
+Variable_1 (AV): "charges" (das Geld in US Dollars, das von Krankenkasse für Behandlungen bezahlt werden muss)
+Variable_2 (UV): "children" (die Anzahl der Kinder)
+
+# Vorbereitung der Datei:
+
+```{r}
+anovaohne <- read.csv("insurance.csv")
+anovaohne
+```
+
+#### Einzelne Werte
+
+```{r}
+as.character(unique(anovaohne$children))
+```
+
+#### Die Anzahl in alle Gruppen
+
+```{r}
+library(dplyr)
+anovaohne %>%
+  count(children)
+```
+
+#### Gruppierung (3, 4, 5 Kinder gilt als ">2")
+
+```{r}
+anovaohne$children[anovaohne$children >= 3] <- ">2"
+anovaohne %>% count(children)
+```
+#### Zuordnung
+
+```{r}
+anovaohne$children <- factor(anovaohne$children, levels=c(0, 1, 2, ">2")) 
+```
+
+```{r}
+as.character(unique(anovaohne$children))
+```
+
+## 1) Hypothese:
+
+H1: Es gibt einen Mittelwertsunterschied zwischen der Anzahl der Kinder (0, 1, 2, >2) und die Kosten der Kunden in der Krankenkasse. M1≠M2≠M3≠M4
+
+H0: Es gibt keinen Mittelwertsunterschied zwischen der Anzahl der Kinder (0, 1, 2, >2) und die Kosten der Kunden in der Krankenkasse. M1=M2=M3=M4
+
+## 2) Voraussetzungen der einfaktoriellen Varianzanalyse ohne Messwiederholung
+
+✓ Die abhängige Variable ist intervallskaliert -> "charges" ist metrisch
+
+✓ Die unabhängige Variable (Faktor) ist kategorial (nominal- oder ordinalskaliert) -> Die Anzahl der Kinder sind ordinalskaliert.
+
+✓ Die durch den Faktor gebildeten Gruppen sind unabhängig - Jede Kunde ist unabhängig und gehört zu einer gebildeten Anzahlgruppe.
+
+✓ Die abhängige Variablen ist normalverteilt innerhalb jeder der Gruppen (Ab > 25 Probanden pro Gruppe sind Verletzungen in der Regel unproblematisch) -> siehe Histogramm
+
+✓ Homogenität der Varianzen: Die Gruppen stammen aus Grundgesamtheiten mit annähernd identischen Varianzen der abhängigen Variablen -> siehe Levene-Test
+
+## 3) Grundlegende Konzepte: Die Grundidee der Varianzanalyse
+
+Die einfaktorielle Varianzanalyse – auch "einfaktorielle ANOVA", da in Englisch "Analysis of Variance" – testet, ob sich die Mittelwerte mehrerer unabhängiger Gruppen (oder Stichproben) unterscheiden, die durch eine kategoriale unabhängige Variable definiert werden.
+
+Die einfaktorielle ANOVA stellt eine Verallgemeinerung des t-Tests für unabhängige Stichproben für Vergleich von mehr als zwei Gruppen (oder Stichproben) dar. 
+
+Die Fragestellung der einfaktoriellen Varianzanalyse wird oft so verkürzt: "Unterscheiden sich die Mittelwerte einer unabhängigen Variable zwischen mehreren Gruppen? Welche Faktorstufen unterscheiden sich?"
+
+## 4) Boxplots
+
+```{r}
+View(anovaohne)
+```
+
+
+```{r}
+boxplot(anovaohne$charges ~ anovaohne$children, main = "Boxplots zum Vergleich", ylab = "Kosten", xlab= "Kinder" , col = c("lightgreen", "deepskyblue","tomato", "orange"))
+```
+
+Boxplot zeigt manche Ausreisser. Die Verteilungen scheinen sich von einander nicht so eindeutig zu unterscheiden.
+
+## 5) Normalverteilung
+Um einen ersten Überblick über die Daten zu gewinnen, empfiehlt es sich Histogrammm zu erstellen.
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+anovaohne %>%
+  group_by(children) %>%
+  ggplot(aes(charges, color=children)) + 
+  geom_histogram(aes(fill = children), bins = 20) +
+  facet_wrap(~children) +
+  theme_grey()+
+  labs(x= "Kosten",y = "Anzahl" )
+```
+Die Daten sind normalverteilt, wenn auch nicht perfekt.
+
+#### Alternativ QQPlot:
+
+```{r}
+library(car)
+
+qqPlot(charges ~ children, data=anovaohne, 
+       layout=c(1, 4))
+```
+Es gibt einige Ausreißer und diese müssen entfernt werden.
+
+```{r}
+# Diese Zeilen sollen entfernt werden
+drops <- c(544, 1301, 578, 35, 1242, 56, 1231, 282, 1147, 820)
+```
+
+
+```{r}
+# Zeilen löschen
+anovaohne <- anovaohne[-drops,]
+# View(anovaohne)
+```
+
+```{r}
+library(car)
+
+qqPlot(charges ~ children, data=anovaohne, 
+       layout=c(1, 4))
+```
+
+#### Nach der Ausreißer:
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+anovaohne %>%
+  group_by(children) %>%
+  ggplot(aes(charges, color=children)) + 
+  geom_histogram(aes(fill = children), bins = 20) +
+  facet_wrap(~children) +
+  theme_grey()+
+  labs(x= "Kosten",y = "Anzahl" )
+```
+
+Die Daten sind normalverteilt, allerdings nicht schön.
+
+## 6) Prüfung der Varianzhomogenität (Levene-Test):
+
+Der Levene-Test prüft die Nullhypothese, dass die Varianzen der Gruppen sich nicht unterscheiden. Ist der Levene-Test nicht signifikant, so kann von homogenen Varianzen ausgegangen. Wäre der Levene-Test jedoch signifikant, so wäre eine der Grundvoraussetzungen der Varianzanalyse verletzt. Gegen leichte Verletzungen gilt die Varianzanalyse als robust; vor allem bei genügend grossen und etwa gleich grossen Gruppen sind Verletzungen nicht problematisch. Bei ungleich grossen Gruppen führt eine starke Verletzung der Varianzhomogenität zu einer Verzerrung des F-Tests. Alternativ können dann auf den den Welch-Test zurückgegriffen werden. Dabei handelt es sich um adjustierte F-Tests.
+
+```{r}
+leveneTest(anovaohne$charges ~ anovaohne$children, center="mean")
+```
+
+Im vorliegenden Beispiel ist der Levene-Test signifikant(F(3,1324) = 2.9165, p = .0332), so dass von Varianzheterogenität ausgegangen werden kann. Das heisst - es muss mit Welch-Korrektur durchgeführt werden.
+
+Mit Welch-Korrektur: p < 0.05 => Ergebnis Signifikant –> Varianzen heterogen
+
+Ohne Welch-Korrektur: p > 0.05 => Ergebnis nicht Signifikant –> Varianzen homogen –> H0 mit Annahme Var1=Var2=… -> Var_n wird angenommen
+
+## 7) Deskriptive Statistiken:
+
+Die Tabelle in Abbildung gibt die Mittelwerte, Standardabweichungen und Grössen aller vier Gruppen wieder. Diese Informationen werden für die Berichterstattung verwendet.
+
+```{r}
+anovaohne %>%
+group_by(children) %>%
+  summarize(Anzahl = n(), Mittelwert = mean(charges), Median = median(charges), Standardabweichung = sd(charges)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+
+Es gibt einen Mittelwertsunterschied zwischen den Gruppen. Die Personen ohne Kind (M = 12042 Dollar, SD = 11416, N=570) hat die nidriegste Gesundheitskosten, gefolgt von der Personen mit einem Kind (M= 12469 Dollar, SD = 11377,N=322). Wie bereits beim Boxplot zu erkennen war, hat die Personen mit 2 Kinder (M = 14792 Dollar, SD = 12571, N=238) die höchste Gesundheitskosten, gefolgt von der Personen mit mehr als 2 Kinder ( M = 14174 Dollar, SD = 10906, N=198).
+
+## 8) Ergebnisse der einfaktoriellen Varianzanalyse
+
+#### mit Welch-Korrektur
+
+```{r}
+ANOVAmitWelch <- oneway.test(anovaohne$charges ~ anovaohne$children)
+ANOVAmitWelch
+```
+Das Gesamtmodel ist signifikant geworden (F(3, 561.81) = 3.9161 , p = 0.0087). Allerdings lässt sich aufgrund dieses Tests nicht bestimmen, welche der vier Gruppen sich signifikant voneinander unterscheiden. Es ist denkbar, dass sich lediglich ein Paar signifikant unterscheidet und zwischen den übrigen keine signifikanten Unterschiede vorliegen. Daher wird ein Post-hoc-Test durchgeführt.
+
+## 9) Post-hoc-Tests
+
+Obwohl der F-Test zeigt, dass ein Haupteffekt von der Anzahl der Kinder auf die Kosten in der Krankenkasse besteht, muss anhand von Post-hoc-Tests geklärt werden, zwischen welchen Faktorstufen (Die Anzahl der Kinder) signifikante Unterschiede bezüglich die Kosten in der Krankenkasse bestehen.
+
+Bei der Berechnung von Post-hoc-Tests wird im Prinzip für jede Kombination von zwei Mittelwerten ein t -Test durchgeführt. Im aktuellen Beispiel mit vier Gruppen sind dies 6 Tests. Multiple Tests sind jedoch problematisch, da der Alpha-Fehler (die fälschliche Ablehnung der Nullhypothese) mit der Anzahl der Vergleiche steigt.
+
+Wird nur ein t-Test mit einem Signifikanzlevel von .05 durchgeführt, so beträgt die Wahrscheinlichkeit des Nicht-Eintreffens des Alpha-Fehlers 95 Prozent. Werden jedoch sechs solcher Paarvergleiche vorgenommen, so beträgt die Nicht-Eintreffens-Wahrscheinlichkeit des Alpha-Fehlers (.95)^6 = .735. Um die Wahrscheinlichkeit des Eintreffens des Alpha-Fehlers zu bestimmen, wird 1 - .735 = .2649 gerechnet. Die Wahrscheinlichkeit des Eintreffens des Alpha-Fehlers liegt somit bei 26.49 Prozent. Diese Fehlerwahrscheinlichkeit wird als “Familywise Error Rate” bezeichnet.
+
+Um dieses Problem zu beheben kann zum Beispiel die Tukey angewendet werden. RStudio rechnet das neue Niveau ein, daher können wir weiter auf 0.05 testen.
+
+```{r}
+TukeyHSD(aov(data=anovaohne, anovaohne$charges~anovaohne$children))
+ANOVA <- aov(data=anovaohne, anovaohne$charges~anovaohne$children)
+#TukeyHSD(ANOVA)
+#View(ANOVA)
+```
+Es wird ersichtlich, dass sich nur die Anzahl der Kinder 0 und 2 bezüglich die Kosten in der Krankenkasse signifikant unterscheiden. (p = .01 < .05). Dagegen unterscheiden sich alle andere Gruppen nicht (p > .05). 
+
+Es können also keine unabhängige/ generalisierbare Gruppe von der Anzahl der Kinder gebildet werden.
+
+## 10) Plot der Mittelwerte
+
+Spannend ist auch sich die Mittelwerte hilfe dieses Plots anzeigen zu lassen.
+
+```{r}
+ggplot(anovaohne, aes(x=children, y=charges, group=1))+
+  stat_summary(fun = mean, geom="point", size=3)+
+  stat_summary(fun = mean, geom="line", size=1)+
+  stat_summary(fun.data = mean_cl_normal, geom="errorbar", width=.1, size=0.2)+
+  labs(x="Kinder", y="Kosten")+
+  theme_classic()
+```
+Wie der Plot in Abbildung erkennen lassen, bestehen bezüglich der vier Gruppen unterschiede im Mittelwert, allerdings überlappen die Errorbars. Deswegen ist es nicht einfach, die Unterschiede zu sehen.
+
+## 11) Berechnung der Effektstärke
+
+#### Das partielle Eta-Quadrat:
+
+Das partielle Eta-Quadrat (partielles η2) ist ein Mass für die Effektgrösse: Es setzt die Variation, die durch einen Faktor erklärt wird, in Bezug mit jener Variation, die nicht durch andere Faktoren im Modell erklärt wird. Das heisst, es wird ausschliesslich jene Variation betrachtet, welche nicht durch die anderen Faktoren im Modell erklärt wird. Das partielle Eta-Quadrat zeigt, welchen Anteil davon ein Faktor erklärt. Im Falle der einfaktoriellen Varianzanalyse ist das partielle Eta-Quadrat ist jener Anteil der korrigierten Gesamtvariation, der durch das Modell erklärt wird.
+
+$$\eta^2 =\frac{QS_{Zwischen}}{QS_{total}}$$
+
+$$\eta^2_{par.} =\frac{QS_{Zwischen}}{QS_{zwischen}+QS_{innerhalb}}$$
+
+```{r}
+library(sjstats)
+eta <- eta_sq(ANOVA, partial = TRUE)
+eta
+```
+
+Hinweis: Eta kann als eigenständige Im vorliegenden Beispiel beträgt das partielle Eta-Quadrat 0.009. Das heisst, es wird 0.9% der Variation in der Kosten durch der Anzahl der Kinder aufgeklärt.
+
+#### Effektstärke:
+
+Um die Bedeutsamkeit eines Ergebnisses zu beurteilen, werden Effektstärken berechnet. Im Beispiel sind zwar einige der Mittelwertsunterschiede zwar signifikant, doch es stellt sich die Frage, ob sie gross genug sind, um als bedeutend eingestuft zu werden.
+
+Es gibt verschiedene Arten die Effektstärke zu messen. Zu den bekanntesten zählen die Effektstärke von Cohen (d) und der Korrelationskoeffizient (r) von Pearson.
+
+Da R das partielle Eta-Quadrat ausgibt, wird dieses hier in die Effektstärke nach Cohen (1988) umgerechnet. In diesem Fall befindet sich die Effektstärke immer zwischen 0 und unendlich.
+
+$$f=\sqrt\frac{eta^{2}}{1-eta^{2}}$$
+
+
+```{r}
+eff <- sqrt(eta$partial.etasq /(1-eta$partial.etasq))
+
+eff
+```
+
+Um zu beurteilen, wie gross dieser Effekt ist, kann man sich an der Einteilung von Cohen (1988) orientieren:
+
+$$\begin{align}
+\text{Schwacher Effekt: } 0.10 &< ||f|| < 0.25             \\
+\text{Schwacher bis mittlerer Effekt: } 0.25 &= ||f||      \\
+\text{Mittlerer Effekt: } 0.25 &< ||f|| < 0.40             \\
+\text{Mittlerer bis starker Effekt: }0.40 &= ||f||         \\
+\text{Starker Effekt: } 0.40 &< ||f||        
+\end{align}$$
+
+
+Damit entspricht eine Effektstärke von 0.096 keinem Effekt (f = 0.096 < 0.10).
+
+## 12) Eine Aussage
+
+Die Anzahl der Kinder hat einen kleinen signifikanten Einfluss auf die Kosten der Personen in einer Krankenkasse ((F(3, 561.81) = 3.9161 , p = 0.0087)). 0.9% der Streuung der Kosten um den Gesamtmittelwert kann durch die Anzahl der Kinder erklärt werden. Die Effektstärke nach Cohen (1988) liegt bei f = 0.096 (< .10) und entspricht keinem Effekt.
+
+Die Personen ohne Kind (M = 12042, SD = 11416, N=570) hat die nidriegste Gesundheitskosten, gefolgt von der Personen mit einem Kind (M= 12469, SD = 11377,N=322). Wie bereits beim Boxplot und beim Profildiagramm zu erkennen war, hat die Personen mit 2 Kinder (M = 14792, SD = 12571, N=238) die höchste Gesundheitskosten, gefolgt von der Personen mit mehr als 2 Kinder ( M = 14174, SD = 10906, N=198). Allerdings haben die Gruppen sehr hoch Standardabweichungen und überlappen miteinander.
+
+Post-hoc-Tests mit Tukey zeigen, dass sich keine Gruppe von Kinderzahlen bilden lassen: 0-Kinder (M = 12042, SD = 11416, N=570) und 2-Kinder (M = 14792, SD = 12571, N=238) unterscheiden sich (p=.01 < .05). Die 1-Kind (M= 12469, SD = 11377,N=322) und mehr als 2-Kinder (M = 14174, SD = 10906, N=198) können jede für sich keine eigene Gruppe bilden. 
+
+Damit kann festgehalten werden, dass sich keine  unabhängige Gruppen bilden lassen und keine Gruppen signifikant unterscheiden.  H0 wird beibehalten.
+
+
+
+
+

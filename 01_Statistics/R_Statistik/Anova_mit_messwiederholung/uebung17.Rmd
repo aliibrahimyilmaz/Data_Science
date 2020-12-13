@@ -1,0 +1,276 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+plot(cars)
+```
+
+```{r}
+library(readxl)
+uebung5 <- read_excel("C:/Users/Alfa/Desktop/Uebungen/uebung17.xlsx")
+```
+
+
+```{r}
+plot(cars)
+
+library(ggplot2)
+library(dplyr)
+library(psych)
+library(car)
+library(effsize)
+library(lsr)
+library(sjstats)
+```
+
+Einfaktoriellen Varianzanalyse 
+mit Messwiederholung
+
+#1.	Hypothese
+
+H0: Die Leistungsmotivation der Testpersonen unterscheidet sich nicht zu verschiedenen Messzeitpunkten.
+
+H1: Die Leistungsmotivaton der Testpersonen unterscheidet sich zu verschiedenen Messzeitpunkten.
+
+#2.	Voraussetzungen der einfaktoriellen Varianzanalyse mit Messwiederholung
+
+Die abhängige Variable ist intervallskaliert -> Die Variable "Leistungsmotivation" ist ratioskaliert.
+
+Die abhängige Variable ist normalverteilt innerhalb jedes Messzeitpunktes (Ab > 25 Probanden pro Messzeitpunkt sind Verletzungen in der Regel unproblematisch) -> siehe Histogrammm oder QQ-Plot
+
+Sphärizität ist gegeben -> siehe Mauchly-Test auf Sphärizität
+
+#3.	Vorrausetzungsprüfung
+```{r}
+
+#umbenennen, Normalitaet (6M <- schliessende Klammer fehlt
+
+
+#neuordnen!
+uebung5$Phase <- factor(uebung5$Phase, levels=c("Honeymoon(Anfang)", "Hangover(3M)", "Normalitaet(6M)" ))      
+
+
+```
+
+
+
+```{r}
+library(car)
+uebung5 %>%
+group_by(Phase) %>%
+ggplot(aes(Leistungsmovitation, color=Phase)) + 
+geom_histogram(aes(fill = Phase), bins = 30) +
+facet_wrap(~Phase) +
+theme_grey()+
+labs(x= "Leistungsmotivationsskala",y = "Anzahl" )
+```
+
+```{r}
+qqPlot(uebung5$Leistungsmovitation,
+main = "QQPlot für die Variable Leistungsmotivation",
+xlab = "Normierte Quantile",
+ylab = "Leistungsmotivation"
+) 
+```
+
+Die Daten sind augenscheinlich eher nicht normalverteilt. Daher sollte der Friedman bevorzugt werden. Allerdings im Rahmen der Übungen und unter Anbetracht der Größe der Daten wir die Normalverteilung als gegeben angesehen.
+
+```{r}
+
+ggplot(uebung5, 
+aes(Leistungsmovitation, 
+color=Phase
+)
+) +
+geom_histogram(binwidth=1, 
+aes(fill = Phase), 
+bins = 6,
+show.legend = TRUE 
+) +
+geom_density(aes(y = ..count.., 
+fill = Phase
+), 
+alpha=0.2, 
+colour = "black",
+size = 0.3,
+show.legend = TRUE
+) +
+theme(panel.background = element_rect(size = 0.5, fill = "gray91", colour = "gray", linetype='solid'),
+panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "gray45"),
+panel.grid.minor = element_line(size = 0.5, linetype = 'solid', colour = "gray"),
+plot.background = element_rect(fill = "moccasin")
+)+
+scale_fill_discrete(name = "Untersuchte Zeitpunkte", 
+breaks = c("Honeymoon(Anfang)", "	Hangover(3M)", "	Normalitaet(6M)"),
+labels = c("Honeymoon(Anfang)", 
+"	Hangover(3M)", 
+"	Normalitaet(6M)"
+),
+aesthetics = "fill" # Die System-Farben werden verwendet.
+)+
+guides(#fill = FALSE, # Mit "fill = FALSE" werden alle Legenden (automatisch,manuell) abgeschaltet.
+color = FALSE
+) + 
+facet_wrap(~ Phase, 
+ncol = 1
+) + 
+labs(title = "Histogramme",
+subtitle = "xxx",
+x = "Leistungsmotivation",
+y = "Anzahl"
+) 
+```
+
+#4.	Deskriptive Statistik 
+
+Die Tabellegibt die Mittelwerte, Standardabweichungen und Grössen aller vier Messzeitpunkte wieder. Diese Informationen werden für die Berichterstattung verwendet.
+
+
+```{r}
+uebung5 %>%
+group_by(uebung5$Phase) %>%
+summarize(Anzahl = n(), Mittelwert = mean(Leistungsmovitation), Median = median(Leistungsmovitation), Standardabweichung = sd(Leistungsmovitation)) %>%
+mutate_if(is.numeric, round, 2)
+```
+Es gibt einen Mittelwertsunterschied zwischen den Messzeitpunkten. In der Honeymoonphase beträgt die Motivationspunkte der Teilnehmer im Mittel ein Wert von 44.48 (SD = 2.01, n=29). Nach drei Monaten Training lag die Leistungsmotivation bei einem Wert von 11.48 (SD = 1.99,n=29).Nach sechs Monaten bei 28.59 (SD=2.11,n=29). Damit haben die Teilnehmer ihre Leistungsmotivation um 17 Punkte herabgesetzt.
+
+
+#5.	Mauchly-Test auf Sphärizität
+
+H0 :Die Varianzen der Differenzen zwischen jeweils zwei Messzeitpunkten sind gleich. 
+H1 :Die Varianzen der Differenzen zwischen jeweils zwei Messzeitpunkten sind nicht gleich.
+
+Ist das Epsilon: p > 0.05 => Ergebnis nicht Signifikant –> Sphärizität
+Ist das Epsilon: p < 0.05 => Ergebnis Signifikant –> keine Sphärizität-> Wenn dies der Fall ist, müssen die Freiheitsgrade mit dem Korrekturfaktor angepasst werden. 
+-> Ist Epsilon < 0.75 ->Greenhouse-Geisser 
+-> Ist Epsilon > 0.75 ->Huynh-Feldt
+
+
+#6.	Ergebnisse der einfaktoriellen Varianzanalyse mit Messwiederholung
+
+```{r}
+library(afex)
+
+anova_multimess1 <- aov_car(Leistungsmovitation~Error(ID/Phase), data =uebung5, return ="univariate")
+anova_multimess1
+
+```
+
+
+
+```{r}
+multimess1b <- aov_car(Leistungsmovitation~Error(ID/Phase), data = uebung5)
+multimess2a <- anova(multimess1b, es="pes", correction="none", intercept= TRUE)
+multimess2a
+multimess2b <- anova(multimess1b, es="pes", correction="GG")
+multimess2b
+multimess2c <- anova(multimess1b, es="pes", correction="HF")
+multimess2c
+```
+
+
+```{r}
+mitmess2<- rbind("nicht Korrigiert"=multimess2a, "Greenhouse-Geisser"=multimess2b, "Huynh-Feldt"=multimess2c)
+mitmess2
+```
+
+```{r}
+View(mitmess2)
+
+```
+
+
+df1= 2
+df2= 56
+
+#7. Post-hoc-Tests
+
+Multiples Testen
+
+
+Obwohl der F-Test zeigt, dass ein Haupteffekt der Training besteht, muss anhand von Post-hoc-Tests geklärt werden, zwischen welchen Messzeitpunkten signifikante Unterschiede bezüglich der Konzentrationsfähigkeit bestehen.
+
+Bei der Berechnung von Post-hoc-Tests wird im Prinzip für jede Kombination von zwei Mittelwerten ein t-Test durchgeführt. Im aktuellen Beispiel mit vier Gruppen sind dies 6 Tests. Multiple Tests sind jedoch problematisch, da der Alpha-Fehler (die fälschliche Ablehnung der Nullhypothese) mit der Anzahl der Vergleiche steigt. Wird nur ein t-Test mit einem Signifikanzlevel von .05 durchgeführt, so beträgt die Wahrscheinlichkeit des Nicht-Eintreffens des Alpha-Fehlers 95%. Werden jedoch zehn solcher Paarvergleiche vorgenommen, so beträgt die Nicht-Eintreffens-Wahrscheinlichkeit des Alpha-Fehlers (.95)6 = .735. Um die Wahrscheinlichkeit des Eintreffens des Alpha-Fehlers zu bestimmen, wird 1 - .735 = .265 gerechnet. Die Wahrscheinlichkeit des Eintreffens des Alpha-Fehlers liegt somit bei 26.5%. Diese Fehlerwahrscheinlichkeit wird als "Familywise Error Rate" bezeichnet.
+
+Hierbei wird α durch die Anzahl der Paarvergleiche dividiert. Im hier aufgeführten Fall ist dies .05/3 = .016. (nur beim "none")
+
+```{r}
+
+
+pairwise.t.test(uebung5$Leistungsmovitation, 
+uebung5$Phase, 
+p.adjust.method = "bonferroni", 
+paired = TRUE, 
+data = uebung5)
+```
+
+Es wird ersichtlich, dass alle drei Messzeitpunkt sich sig unterscheiden(p < .05, wegen method="bonferroni"). Daher lassen sich für eigenständige Gruppen bilden. 
+
+
+#8.	Profildiagramm
+
+```{r}
+
+ggplot(uebung5, aes(x=Phase, y=Leistungsmovitation, group=1))+
+stat_summary(fun.y = mean, geom="point", size=3)+
+stat_summary(fun.y = mean, geom="line")+
+stat_summary(fun.data = mean_cl_normal, geom="errorbar",width=.2, size=.25)+
+labs(x="Phase", y="Leistungsmotivationsskala")+
+theme_classic()
+
+```
+
+
+Im vorliegenden Beispiel beträgt das partielle Eta-Quadrat .9588. Das heisst, es wird 95,88% der Variation der Gewichtsreduktion durch die Messzeiten aufgeklärt.
+
+
+# Das partielle Eta-Quadrat
+Das partielle Eta-Quadrat (partielles η2) ist ein Mass für die Effektgrösse: Es setzt die Varianz, die durch einen Faktor erklärt wird, in Bezug mit jener interessierenden Varianz, die noch nicht durch andere Faktoren im Modell erklärt wird. Das heisst, es wird ausschliesslich jene Variation betrachtet, welche im Fokus des Interesses steht und nicht bereits durch die anderen Faktoren im Modell erklärt wird. Das partielle Eta-Quadrat zeigt, welchen Anteil davon ein Faktor erklärt. Im Falle der einfaktoriellen Varianzanalyse mit Messwiederholung liegt das Interesse ausschliesslich auf der Varianz innerhalb der Personen (SSinnerhalb Personen = SSTreatment + SSResidual), weswegen sich das partielle Eta-Quadrat wie folgt berechnet
+
+
+
+$$ eta_p^2 = \frac{SS_{Treatment}}{SS_{Treatment}+SS_{Residual}}$$
+
+
+
+
+
+
+```{r}
+
+sprintf("Partielle Eta-Quadrat für 'Phase': eta= %.4f",multimess2a$pes[2])
+
+```
+
+Im vorliegenden Beispiel beträgt das partielle Eta-Quadrat .9873. Das heisst, es wird 98,73% der Variation der Gewichtsreduktion durch die Messzeiten aufgeklärt.
+
+#9.	Berechnung der Effektstärke
+
+```{r}
+
+effneu <- sqrt(mitmess2$pes[2]/(1-mitmess2$pes[2]))
+
+sprintf("Effektstärke: f= %.3f",effneu)
+```
+Um zu beurteilen, wie gross dieser Effekt ist, kann man sich an der Einteilung von Cohen (1988) orientieren:
+
+f = .10 entspricht einem schwachen Effekt 
+
+f = .25 entspricht einem mittleren Effekt
+
+f = .40 entspricht einem starken Effekt
+
+Damit entsprechen die Effektstärken von 8.833 einem starken Effekt.
+
+
+#10.	Eine Aussage
+
+Eine Varianzanalyse mit Messwiederholung zeigt, dass sich die Leistungsmotivation der ProbandInnen je nach Messzeitpunkt unterscheidet. (F(2,56) = 2184.8, p < .000, partielles η2 = .9873, n = 29). Der Mauchly-Test ergab, dass Sphärizität gegeben ist, weshalb die Greenhouse-Geisser-Korrektur nicht angewendet wurde, wodurch sich korrigierte Freiheitsgrade nicht ergeben.
+
+Der Post-Hoc-Test zeigt, dass die Leistungsmotivation der ProbandInnen zum Messzeitpunkt Honeymoon (M =44.48, SD = 2.01, n=29)  signifikant höher sind als zum Messzeitpunkt Hangover (3M) (M =11.48, SD = 1.99, n=29)  aber wieder zum Messzeitpunkt Normalität(6M)(M =28.59, SD=2.11, n=29) steigt .
+
+Die Effektstärke liegt bei f=8.833 und entspricht damit nach Cohen (1988) einem starken Effekt. H0 kann verworfen werden, H1 angenommen.
+

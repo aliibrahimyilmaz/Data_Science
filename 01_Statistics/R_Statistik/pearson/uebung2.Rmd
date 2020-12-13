@@ -1,0 +1,176 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+## Package 
+
+```{r warning=TRUE}
+
+library(psych) #->Deskriptive Statistik
+library(dplyr) #-> Rename
+library(ggplot2)#->Scatterplot
+
+```
+## Roadmap 
+
+1) Hypothese
+2) Voraussetzungen
+3) Grundlegende Konzepte: Was ist Pearson?
+4) Grafische Veranschaulichung des Zusammenhangs -> Streudiagramm
+5) Deskriptive Statistik
+6) Ergebnisse der Korrelationsanalyse
+7) Berechnung des Bestimmtheitsmasses
+8) Berechnung der Effektstärke
+9) Die Aussage 
+
+
+# Hypothesen
+
+H1 :Es gibt einen Zusammenhang zwischen Körpergewicht (Bwt) und Herzgewichtes eines Katers (Hwt).<br>
+H0 :Es gibt keinen Zusammenhang zwischen Körpergewicht (Bwt) und Herzgewichtes eines Katers (Hwt).
+
+# Voraussetzungen
+Die Variablen sind mindestens intervallskaliert -> Ja! Herzgewicht und Körpergewicht sind ratioskaliert. 
+
+Die Variablen sind normalverteilt (n>30) -> Prüfung mithilfe des Histogramms 
+
+Der untersuchte Zusammenhang zwischen den Variablen muss linear sein -> Prüfung mit Scatterplot
+
+
+#  Grundlegende Konzepte: Was ist Pearson?
+
+Die Korrelation beschreibt den Zusammenhang von zwei intervallskalierten Merkmalen/Variablen einer Zufallsstichprobe. Die Stärke des Zusammenhangs lässt sich mit Hilfe des Korrelationskoeffizienten r nach Bravais und Pearson berechnen. Die Variablen sind unabhängig voneinander und folglich werden keine kausalen Aussagen gemacht.
+
+
+# Deskriptive Statistik
+
+```{r}
+#Überblick zum Datensatz
+summary(uebung2)
+
+```
+
+```{r}
+
+# Beschriftung der Spalten ändern. 
+
+# library(dplyr) 
+
+uebung2 <- uebung2 %>%
+           rename(Koerpergewicht    = 'Bwt',
+                  Herzgewicht       = 'Hwt')
+```
+Die neue Variablennamen steht links in rename, dann rechts der Name der aktuellen Variable.<br> **Hinweis** In Hochkomma ' ' wegen der Leerzeichen.
+
+
+
+```{r}
+psych::describe.by(uebung2$Koerpergewicht)
+psych::describe.by(uebung2$Herzgewicht)
+```
+Das Herzwicht von Katzen liegt bei 11.32 g (SD = 2.54, n = 97). Das Körpergewicht bei 2.9 kg (SD = 0.49, n = 97).
+
+
+
+# Histogramme 
+
+### Histogramm des Körpergewichtes der Kater
+```{r}
+hist(uebung2$Koerpergewicht, main = "Histogramm des Körpergewichtes der Kater", xlab = "Gewicht der Katze in kg", ylab = "Anzahl", col = "gray" )
+```
+
+
+### Histogramm des männlichen Katerherzens
+
+
+```{r}
+hist(uebung2$Herzgewicht, main = "Histogramm des Herzgewichtes der Kater", xlab = "Gewicht der Katze in g", ylab = "Anzahl", col = "gray", breaks = 17 )
+```
+
+Offensichtlich sind beide Diagramme normalverteilt. <br>
+
+1) weil die Ränder kleiner sind als die Mitte <br>
+2) Die Anzahl der Datensätze ist größer 30
+
+
+Hinweis: Zur Prüfung der Normalverteilung kann ein QQplot verwendet werden. Weiterführende Information unter: Statistik mit Jule -> Unterlagen
+
+# Streudiagramm 
+
+Ein Streudiagramm, auch Punktwolke genannt (engl. scatter plot), ist die graphische Darstellung von beobachteten Wertepaaren zweier statistischer Merkmale. Diese Wertepaare werden in ein kartesisches Koordinatensystem eingetragen, wodurch sich eine Punktwolke ergibt. 
+
+```{r}
+library(ggplot2)#->Diagramme
+
+ggplot(uebung2, aes(x = Koerpergewicht, y = Herzgewicht))+ # Daten
+geom_point(size = 2)+ # Punkt groeße 2
+geom_smooth(method = "lm", col = "green")# Linie mit der Farbe Grün
+```
+
+
+Es besteht ein augenscheinlicher positiver linearer Zusammenhang. 
+
+# Korrelation nach Bravais-Pearson
+
+Der Korrelationskoeffizient kann nur Werte im Bereich zwischen -1 und +1 annehmen. Ist er kleiner als Null (r < 0), so besteht ein negativer linearer Zusammenhang. Bei einem Wert grösser als Null (r > 0) besteht ein positiver linearer Zusammenhang und bei einem Wert von Null (r = 0) besteht kein Zusammenhang zwischen den Variablen. 
+
+
+```{r}
+
+test <- cor.test(uebung2$Koerpergewicht, uebung2$Herzgewicht)# Reihenfolge ist egal, weil keine Kausalität besteht.
+test
+
+```
+Die Information aus der Auswertung werden in der Varibale "test" gespeichert. 
+
+Es wird ersichtlich, dass ein Zusammenhang  zwischen Herz und Gewicht eines Katers (r = .793, p = .000, n = 97)vorliegt. Da r einen positiven Wert aufweist, kann von einem positiven linearen und signifikanten  Zusammenhang zwischen Herz und Gewicht der Katze ausgegangen werden. Das bedeutet: Je schwerer der Körper der Katze,  desto schwerer das Herz. 
+
+
+# Bestimmtheitsmaß - R²
+
+
+Das Bestimmtheitsmaß, auch Determinationskoeffizient, bezeichnet mit R²  ist in der Statistik eine Kennzahl zur Beurteilung der Anpassungsgüte. Das Bestimmtheitsmaß entspricht dem Quadrat des Bravais-Pearson-Korrelationskoeffizienten. 
+
+
+$$Bestimmtheitsmaß = Korrelationskoeffizient^2 *100$$
+$$Bestimmtheitsmaß = r^2 *100$$
+
+
+```{r}
+rbestimmt <- (test$estimate)^2  *100
+sprintf("Bestimmtheitsmaß: %.2f Prozent",rbestimmt)
+```
+
+
+Zur Berechung des Bestimmtheitsmaßes wird auf die Varibale "test" zurückgegriffen. Der Korrelationskoeffizient ist in "estimate" gespeichert. 
+
+Wird dieser Wert mit 100 multipliziert, so ergibt sich ein Prozentwert. Dieser gibt an, welcher Anteil der Varianz in beiden Variablen durch gemeinsame Varianzanteile determiniert wird. Für das vorliegende Beispiel beträgt der Anteil der gemeinsamen Varianz 62.89%.
+
+
+# Effektstärke
+
+Effektstärke (auch Effektgröße) bezeichnet die Größe eines statistischen Effekts. Sie kann zur Verdeutlichung der praktischen Relevanz von statistisch signifikanten Ergebnissen herangezogen werden. Zur Messung der Effektstärke werden unterschiedliche Effektmaße verwendet. Im Rahmen dieses Verfahrens wird die Effektstärke nach Cohen interpretiert. 
+
+
+```{r}
+sprintf("Effektstärke: %.2f",test$estimate)
+```
+
+r = .10 entspricht einem schwachen Effekt
+r = .30 entspricht einem mittleren Effekt
+r = .50 entspricht einem starken Effekt 
+
+
+
+Das Ergebnis ist stark nach Cohen(1992). 
+
+
+# Aussage 
+
+
+Das Herz und das Gewicht eines Katers korrelieren signifikant (r = .793, p = .000, n = 97). Je schwer das Herz eines Katers, desto schwerer sein Köper; Je schwer sein Körpergewicht, desto schwer sein Herz.
+
+62.89% der Streuung der gemeinsamen Varianz kann durch Gewicht und Herzgewicht erklärt werden. Dabei handelt es sich nach Cohen (1992) um einen starken Effekt.
+
+
+

@@ -1,0 +1,292 @@
+---
+title: "t-test fuer unabhaenige Stichprone"
+output: html_notebook
+---
+## Package 
+
+```{r}
+library(dplyr) #->  Gruppierung der Daten
+library(ggplot2) #-> Diagramm
+library(car) #-> Prüfung auf Varianzhomogenität
+library(effsize)# -> Cohen´s d 
+```
+
+
+## Roadmap 
+
+
+1) Hypothese
+2) Voraussetzungen des t-Tests für unabhängige Stichproben
+3) Grundlegende Konzepte: Was ist t-Test für unabhängige Stichproben?
+4) Deskriptive Statistiken
+5) Test auf Varianzhomogenität (Levene-Test)
+6) Ergebnisse des t-Tests für unabhängige Stichproben
+7) Berechnung der Effektstärke
+8) Eine Aussage
+
+
+**Es wird eine gerichte Hypothese verwendet.**
+
+
+# 1)	Hypothese 
+H1: Legendary Pokemon sind stärker als Nicht-Legendary Pokemon. $M_{L} \neq M_{nL}$<br>
+H0: Legendary Pokemon sind schwächer oder gleich stark wie Nicht-Legendary Pokemon. $M_{L} = M_{nL}$ 
+
+# 2)	Voraussetzungen des t-Tests für unabhängige Stichproben
+
+Die abhängige Variable ist min. intervallskaliert -> Attack <br>
+
+Es liegt eine unabhängige Variable vor, mittels der die beiden zu vergleichenden Gruppen gebildet werden-> Legendary vs. Nicht Legendary <br>
+
+Das untersuchte Merkmal ist in den Grundgesamtheiten der beiden Gruppen normalverteilt ->Histogramm <br>
+
+Homogenität der Varianzen: Die Gruppen kommen aus Grundgesamtheiten mit annähernd identischer Varianz -> siehe Levene-Test  <br>
+
+
+Die einzelnen Messwerte sind voneinander unabhängig (das Verhalten einer Versuchsperson hat keinen Einfluss auf das Verhalten einer anderen) -> Ja, sind sie, da entweder eine Pokemon Legendary ist oder nicht.<br>
+
+
+
+# 3)	Grundlegende Konzepte: Was ist t-Test für unabhängige Stichproben?
+
+Der t-Test für unabhängige Stichproben testet, ob die Mittelwerte zweier unabhängiger Stichproben verschieden sind.
+
+Die Fragestellung des t-Tests für unabhängige Stichproben wird oft so verkürzt: "Unterscheiden sich die Mittelwerte zweier unabhängiger Stichproben?"
+
+# Voraussetzungsprüfung 
+### Prüfung der Normalverteilung
+
+
+
+```{r}
+#library(dplyr) -> # Gruppierung der Daten
+#library(ggplot2) -># Diagramm
+
+  h <- uebung4 %>%
+  group_by(Legendary) %>% #Legendary vs. Nicht-Legendary
+    
+  ggplot(aes(Attack)) + # AV angeben
+  geom_histogram(aes(fill = Legendary), bins = 20) + # Histogramm mit 20 Bins(Säulen) und Info für die Legende 
+  facet_wrap(~Legendary) + # Trennung in zwei Grafen
+  theme_classic()+ # Standardfarbprofil
+  labs(x= "Sicherheitsgefühl",y = "Anzahl" ) # Beschriftung der Achsen
+  
+ h
+```
+Es liegt eine Normalverteilung vor. 
+
+```{r}
+A <-subset(uebung4, uebung4$Legendary =="FALSE")
+B <-subset(uebung4, uebung4$Legendary =="TRUE")
+
+hist(A$Attack, 
+     main = "Histogramm für Non-Legendary", 
+     ylab= "Anzahl",
+     xlab= "Attack", 
+     col= "lightgreen")
+
+```
+
+```{r}
+hist(A$Attack, 
+     main = "Histogramm für Legendary", 
+     ylab= "Anzahl",
+     xlab= "Attack", 
+     col= "lightblue")
+```
+
+# 4)	Deskriptive Statistiken
+
+
+
+```{r}
+# library(dplyr) -> Gruppierung
+uebung4 %>%
+group_by(Legendary) %>%
+  summarize(Anzahl = n(), Mittelwert = mean(Attack), Median = median(Attack), Standardabweichung = sd(Attack)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+
+Legendary Pokemon haben eine Attackenscore im Mittel von 116.68 (SD=30.35, n=65). Nicht Legendary Pokemon sind schwächer(M= 75.67 SD=30.49, n=735).
+
+
+
+# 5)	Test auf Varianzhomogenität (Levene-Test)
+
+Es ist zu prüfen, ob Varianzheterogenität vorliegt, sprich unterschiedliche Varianzen. Sollte das der Fall sein, müssen unter anderem die Freiheitsgerade des t-Wertes angepasst werden. Mithilfe des Levene-Test auf Varianzhomogenität kann dies prüft werden.
+
+Der Levene-Test verwendet die Nullhypothese: "Die beiden Varianzen sind nicht unterschiedlich". Alternativhypothese ist somit: "Die beiden Varianzen sind unterschuiedlich".
+
+
+Daher  ist ein nicht signifikantes Ergebnis wie folgt zu deuten: Die Varianzen sind nicht unterschiedlich und also Varianzhomogenität liegt vor. Ist der Test signifikant, so wird von Varianzheterogenität gesprochen. 
+
+
+```{r}
+# library(car)-> Prüfung auf Varianzhomogenität
+# uebung4$Legendary coerced to factor -> Beheben
+# uebung4$Legendary <- as.factor(uebung4$Legendary)
+
+leveneTest(uebung4$Attack, uebung4$Legendary, center = mean)
+```
+**Hinweis:** Zu erst die AV "Attack" (metrisch) und dann die UV "Legendary" (dichotom). "center = mean" verwendet den Mittelwert. Bei Ausreißern, starken Abweichungen zwischen dem Mittelwert und Median ist "center = median" zu empfehlen. 
+
+
+Also es ist zuerkennen, das Homogenität vorliegt, da der Levene-Test nicht signifikant ist. Daher können wir von gleichen Varianzen ausgehen (F(1, 798) = .0031, p = .955). Es ist daher notwendig keine Welch-Korrektur durchzuführen.
+
++ p < 0.05 => Ergebnis signifikant –> Varianzen heterogen -> **Welch-Korrektur**
++ p > 0.05 => Ergebnis nicht sig. –> Varianzen homogen –> H0 mit Annahme Var1=Var2 -> **Ohne Welch-Korrektur**
+
+Die Welch-Korrektur korregiert, wie der Name schon sagt, die fehlende Homogenität der Varianzen durch die Anpassung der Freiheitsgrade und des t-empirsch-Wertes. 
+
+
+
+# 6)	Ergebnisse des t-Tests für unabhängige Stichproben
+
+An dieser Stelle findet die eigentliche Auswertung des t-Testes statt. Wie der Name schon verweist wird bei der Auswertung die t-Verteilung verwendet. 
+
+
+Auch hier ist die Reihenfolge zu achten erst AV und dann UV. Da in diesem Beispiel eine gerichtete Hypothese verwendet wird mit einem Alpha-Niveau von 0.05,ist "con= 0.95, alt = "less"" zu verwenden. Je nach Richtung "less" or "greater". Sollte eine 1 bei p-value stehen ist es genau die andere Richtung. 
+
+"Var.eq =True" bedeutet, dass die Varianzen homogen (gleich) sind, bzw. "Var.eq =False" das die Varianzen hetrogen sind. 
+
+Die Formeln für die Anpasstungen des t-empirsch sind: 
+
+### mit Welch-Korrektur
+$$t_{emp.hetrogene.Varianz}=\frac{\hat{u_1}-\hat{u_2}}{\sqrt{(\frac{\hat{o_1}^2}{n_1}+ \frac{\hat{o_1}^2}{n_2}})}$$
+
+### Ohne Welch-Korrektur
+$$t_{emp.homegene.Varianz}=\frac{\hat{u_1}-\hat{u_2}}{\sqrt{(\frac{1}{n_1}+ \frac{1}{n_2})*\frac{(n_1-1)*\hat{o_1}^2+(n_2-1)*\hat{o_2}^2}{(n_1-1)+(n_2-1)}}}$$
+
+
+### Ohne Welch-Korrektur - gerichtet 
+```{r}
+
+ohnewelch<- t.test(uebung4$Attack~uebung4$Legendary, var.eq = T, con= 0.95, alt = "less")
+ohnewelch
+```
+
+Die Teststatistik beträgt t = -10.397 und der zugehörige Signifikanzwert p = .000. Damit ist der Unterschied signifikant: Mittelwerte unterscheiden sich (t(798) = -10.397, p = 2.2e-16)
+
+##  Dieser Abschnitt dient der Erklärung 
+
+
+
+### Ohne Welch-Korrektur - ungerichtete Hypothese 
+```{r}
+ohnewelchungerichtet<- t.test(uebung4$Attack~uebung4$Legendary, var.eq = T, con= 0.95, alt = "two.sided")
+ohnewelchungerichtet
+```
+
+
+Ungerichtete Hypothesen testen zweiseitig, deswegen "two.sided"
+
+### mit Welch-Korrektur - ungerichtete Hypothese 
+```{r}
+mitwelchUngerichtet<- t.test(uebung4$Attack~uebung4$Legendary, var.eq = F, con= 0.95, alt = "two.sided")
+mitwelchUngerichtet
+```
+
+"var.eq = F" führt dazu, dass eine Welch-Korrektur durchgeführt wird. In der Überschrift steht "Welch Two Sample t-test". Die ungerichtete Hypothesen testen zweiseitig, deswegen "two.sided". 
+
+
+### mit Welch-Korrektur - gerichtete Hypothese 
+```{r}
+mitwelchgerichtet<- t.test(uebung4$Attack~uebung4$Legendary, var.eq = F, con= 0.95, alt = "less")
+mitwelchgerichtet
+```
+"Var.eq = F" führt dazu, dass eine Welch-Korrektur durchgeführt wird. In der Überschrift steht "Welch Two Sample t-test". Die gerichtete Hypothesen testen einseitig, deswegen "less". Die Richtung ist richtig. 
+
+**Im folgenden Beispiel wird gezeigt, was passiert, wenn die Richtung nicht stimmt.  **
+
+
+
+### mit Welch-Korrektur - gerichtete Hypothese -  falsche Richtung
+```{r}
+mitwelchgerichtetGREATER<- t.test(uebung4$Attack~uebung4$Legendary, var.eq = F, con= 0.95, alt = "greater")
+mitwelchgerichtetGREATER
+```
+
+p-value ist 1. Die Richtung stimmt nicht
+
+
+
+# 7)	Berechnung der Effektstärke
+
+Die Effektstärke ist ein Maß für die Stärke eines Treatments bzw. Phänomens. Effektstärken sind damit eine der wichtigsten Größen in empirischen Studien. Zur Einschätzung der praktischen Bedeutsamkeit existieren verschiedene Effektstärkemaße, die bei der Interpretation der Größe eines Effektes helfen. 
+
+### Bei gleichgroßen Gruppen
+
+
+$$r=\sqrt{\frac{t^2}{t^2+df}}$$
+Im Rahmen des t-Tests für unabhängige Stichprobe berechnen wir nach Pearson und interpretieren nach Cohen(1992).
+
+
+```{r}
+eff <- sqrt ((ohnewelch$statistic^2 )/ (ohnewelch$statistic^2 + ohnewelch$parameter))
+sprintf("Effektstärke: %.2f",eff)
+```
+
+
+Zur Beurteilung der Groesse des Effektes dient die Einteilung von Cohen (1992):
+
+$$
+\begin{align}
+\text{Schwacher Effekt: } 0.10 &< ||r|| < 0.30             \\
+\text{Schwacher bis mittlerer Effekt: } 0.30 &= ||r||      \\
+\text{Mittlerer Effekt: } 0.30 &< ||r|| < 0.50             \\
+\text{Mittlerer bis starker Effekt: }0.50 &= ||r||         \\
+\text{Starker Effekt: } 0.50 &< ||r||        
+\end{align}
+$$
+
+
+Damit entspricht eine Effektstärke von .55 einem starken Effekt. **Hier nicht anwenden**
+
+
+
+## Bei ungleichgroßen Gruppen
+
+$$d = (\frac {n1+n2}{n1*n2}+ 0.5*d^2/df) * (\frac{(n1+n2}{df})$$
+
+
+```{r}
+# library(effsize) -> Effeltstärke 
+
+
+cohen.d(d = uebung4$Attack, f= uebung4$Legendary)
+```
+Interpretation von d nach Cohen (1988):
+
+$$
+\begin{align}
+\text{Schwacher Effekt: } 0.20 &< ||d|| < 0.50             \\
+\text{Schwacher bis mittlerer Effekt: } 0.50 &= ||d||      \\
+\text{Mittlerer Effekt: } 0.50 &< ||d|| < 0.80             \\
+\text{Mittlerer bis starker Effekt: }0.80 &= ||d||         \\
+\text{Starker Effekt: } 0.80 &< ||d||        
+\end{align}
+$$
+Es liegt ein starker Effekt vor(d = 3.4).
+
+# 8)	Eine Aussage
+
+Legendary-Pokemon haben einen signifikanten höheren Attackenscore (M = 116.68, SD=30.35, n=65) als  Nicht-Legendary-Pokemon (M = 75.67 SD=30.49, n=735)(t(798) = -10.397, p < 2.2e-16). Es liegt ein starker Effekt vor (d = 3.4). Die H0 kann verworfen werden.  Daher empfehlt es sich eine Legendary-Pokemon zu fangen.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

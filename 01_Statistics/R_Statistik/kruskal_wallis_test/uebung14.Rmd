@@ -1,0 +1,159 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+## Packages
+
+```{r}
+library(dplyr)#-> Deskriptive Statistiken
+```
+
+```{r}
+uebung14 <- uebung14 %>%
+           rename(Lebensraum    = 'Lebenraum')
+```
+
+
+## Roadmap
+1)	Hypothese 
+2)	Voraussetzungen für den Kruskal-Wallis-Test
+3)	Grundlegende Konzepte
+4)	Deskriptive Statistiken + Boxplots
+5)	Ergebnisse der Kruskal-Wallis-Test
+6)	Post-hoc-Tests
+7)	Berechnung der Effektstärke
+8)	Eine Aussage
+
+# 1)	Hypothese 
+
+H1: Es gibt einen Unterschied in der zentralen Tendenz zwischen der Lebensraum und dem Wasserverbrauch.
+H0: Es gibt keinen Unterschied in der zentralen Tendenz zwischen der Lebensraum und dem Wasserverbrauch.
+
+# 2)	Voraussetzungen für den Kruskal-Wallis-Test
+
+Die abhängige Variable ist mindestens ordinalskaliert. Ja, die Var. "Wasserverbrauch" mist metrisch.
+
+Es liegt eine unabhängige Variable vor, mittels der die zu vergleichenden Gruppen gebildet werden. Faktor "Lebensraum"-> Faktorstufen/Ausprägung (Haus, Zimmer, Wohnung, Loch)
+
+# 3)	Grundlegende Konzepte
+
+Der Kruskal-Wallis-Test wird "H-Test" genannt. Er untersucht für unabhängige Stichproben, ob sich die zentralen Tendenzen mehrerer unabhängiger Stichproben unterscheiden. Der Kruskal-Wallis-Test wird verwendet, wenn die Voraussetzungen für eine ANOVA nicht erfüllt sind.
+
+Der H-Test ist das nichtparametrische Äquivalent der einfaktoriellen Varianzanalyse ohne Messwiederholung und wird angewendet, wenn die Voraussetzungen für ein parametrisches Verfahren nicht erfüllt sind.
+
+Bei diesen Ausprägungen eignet sich der U-Test:
+
+   + kleine Stichproben
+   + Ausreisser
+   + ordinalskalierte Daten
+   + keine Normalverteilung
+
+Die Fragestellung des Kruskal-Wallis-Tests wird oft so verkürzt:
+"Unterscheiden sich die zentralen Tendenzen mehrerer unabhängiger Stichproben?"
+
+# 4)	Deskriptive Statistiken + Boxplots
+
+### Deskriptive Statistiken
+
+```{r}
+# library(dplyr)-> Deskriptive Statistiken
+uebung14 %>%
+group_by(Lebensraum) %>% # Spilten auf die Wohnraumarten
+  summarize(Anzahl = n(),  Median = median(Wasserverbrauch)) %>% #Anzahl und der Median 
+  mutate_if(is.numeric, round, 2) # die Daten werden gerundet
+```
+
+Der Wasserverbrauch in den Wohntypen unterscheidet sich. Angefangen bei dem geringsten Verbrauch mit 7 l pro Tag pro Person (Loch: n=11), gefolgt vom Lebensraum "Zimmer" mit 18.5 l pro Tag pro Person (n=12). Die Wohnform "Wohnung" verbraucht 56.5 l pro Tag pro Person (n=10). Den höchsten Wasserverbrauch hat die Wohnform "Haus" mit 86.0 l pro Tag pro Person (n=7). 
+
+# Boxplots
+
+
+```{r}
+boxplot(uebung14$Wasserverbrauch ~ uebung14$Lebensraum, main = "Boxplots Lebensraum und Wasserverbrauch", ylab = "Liter pro Person pro Tag", xlab= "Lebensraum" , col = c("lightgreen", "deepskyblue","tomato","lightblue"))
+```
+Die Mediane unterscheiden sich. Es gibt keine Ausreißer. Es gibt eine Überschneidung zwischen "Loch" und "Zimmer". 
+
+
+```{r}
+# Die Reihenfolge kann geändert werden,  damit der Boxplot geordnet aussieht. 
+uebung14$Lebensraum<-factor(uebung14$Lebensraum, levels=c("Haus", "Wohnung", "Zimmer", "Loch")) 
+```
+
+
+# 5)	Ergebnisse der Kruskal-Wallis-Test
+```{r}
+test <- kruskal.test(Wasserverbrauch ~ Lebensraum, data=uebung14)
+test
+```
+Die Tabelle zeigt Unterschiede. Für das Beispiel wird eine Signifikanz von <.000 ausgegeben. Also kann davon ausgegangen werden, dass es Unterschiede bezüglich der zentralen Tendenzen der Gruppen gibt (Chi-Quadrat(3) = 35.527,p < .000).
+
+Allerdings lässt sich aufgrund dieses Tests nicht bestimmen, welche der vier Gruppen sich signifikant voneinander unterscheiden. Es ist denkbar, dass sich lediglich ein Paar signifikant unterscheidet und zwischen den übrigen keine signifikanten Unterschiede vorliegen. Daher wird ein Post-hoc-Test durchgeführt.
+
+
+
+# 6)	Post-hoc-Tests
+
+```{r}
+PostHoc <- aov(Wasserverbrauch ~ Lebensraum, data=uebung14)
+TukeyHSD(PostHoc)
+```
+Der Post-Hoc-Test ergibt, dass sich alle vergleichenden Gruppen signifikant unterscheiden (p < 0.05).
+
+Es gibt einem signifikanten Unterschied zwischen den sechs getesteten Gruppen, das heisst, dass jeder Lebensraum einen deutlichen Unterschied in ihrem Wasserverbrauch aufweisen.
+
+# 7)	Berechnung der Effektstärke
+
+Variante 1:
+$$r=\left\| \frac{z}{\sqrt{n}} \right\|$$
+```{r}
+
+Zstat<-qnorm(test$p.value/2) # Es wird durch zwei geteilt, weil die Hypothese ungerichtet ist.
+sprintf("Z-Wert für den U-Test : %.2f", Zstat)
+
+
+daten <- nrow(uebung14)
+sprintf("Anzahl der Daten: %.f", daten)
+
+
+eff <- abs(Zstat/sqrt(daten))
+sprintf("Effektstärke: %.2f", eff)
+```
+
+Zur Beurteilung der Grösse des Effektes dient die Einteilung von Cohen (1992):
+
+r = .10 entspricht einem schwachen Effekt
+r = .30 entspricht einem mittleren Effekt
+r = .50 entspricht einem starken Effekt
+
+Damit entspricht eine Effektstärke von .84 einem starken Effekt.
+
+
+### Variante 2:
+
+```{r}
+anzahl <- nrow(uebung14)
+chi <- test$statistic
+
+w<- sqrt(chi /anzahl)
+sprintf("Effektstärke mit w: %f",w)
+```
+
+
+w = .10 entspricht einem schwachen Effekt
+
+w = .30 entspricht einem mittleren Effekt
+
+w = .50 entspricht einem starken Effekt
+
+Damit entspricht eine Effektstärke von 0.9424 einem starken Effekt.
+
+
+# 8)	Eine Aussage
+
+Der Kruskal-Wallis-Test bestätigt, dass der Wasswerverbrauch sich durch die Lebensraum unterscheidet (Chi-Quadrat(3) = 35.527,p < .000).
+
+Der anschliessend durchgeführte Post-hoc-Test (Tukey) zeigt, dass alle Gruppen sich unterscheiden (p < 0.05).  Angefangen bei dem geringsten Verbrauch mit 7 l pro Tag pro Person (Loch: n=11), gefolgt vom Lebensraum "Zimmer" mit 18.5 l pro Tag pro Person (n=12). Die Wohnform "Wohnung" verbraucht 56.5 l pro Tag pro Person (n=10). Den höchsten Wasserverbrauch hat die Wohnform "Haus" mit 86.0 l pro Tag pro Person (n=7). 
+
+Die Effektstärke nach Cohen (1992) (r = .84) zeigt ein starken Effekt, sodass tatsächlich der Lebensraunm einen grossen Effekt auf den Wasserverbrauch hat. H0 wird ablehnen.
+
+

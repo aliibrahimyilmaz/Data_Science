@@ -1,0 +1,167 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+## package 
+
+```{r}
+library(reshape2) #-> Anpassung 
+library(dplyr) #->Deskriptive Statistik
+library(psych)#-> Alternative für die deskriptive Statistik
+library(PMCMR)# -> Post-Hoc- Friedman- Gleich_große_Gruppen
+```
+
+```{r}
+# library(reshape2) -> Anpassung 
+uebung19 <- melt(friedman,
+id.vars = c("ID"),
+measure.vars = c("Mutter", "Vater", "Krippenpersonal"),
+variable.name = "Betreuer",
+value.name = "Aggression")
+View(uebung19)
+```
+
+## Roadmap
+1.	Hypothese
+2.	Voraussetzungen des Friedman-Tests
+3.	Grundlegende Konzepte
+4.	Boxplot
+5.	Deskriptive Statistik
+6.	Ergebnisse des Friedman-Test 
+7.	Post – Hoc -Test
+8.	Berechnung der Effektstärke
+9.	Eine Aussage
+
+## 1.	Hypothese
+
+H0: Es gibt keinen Unterschied zwischen der Beurteilung der Aggressivität der Kinder zwischen Eltern (Mutter/Vater) und dem Kitapersonal. 
+H1: Es gibt einen Unterschied zwischen der Beurteilung der Aggressivität der Kinder zwischen Eltern (Mutter/Vater) und dem Kitapersonal.
+
+
+## 2.	Voraussetzungen des Friedman-Tests
+
+Die abhängige Variable ist mindestens ordinalskaliert -> Beurteilung der Aggressivität ist min. ordinal. 
+
+Es liegen verbundene Stichproben vor, aber die verbundenen "Gruppen" von Messwerten sind unabhängig voneinander -> die verschiedenen Mutter-Vater-Kitapersonal-Triaden sind voneinander unabhängig
+
+
+## 3.	Grundlegende Konzepte
+
+Der Friedman-Test für abhängige Stichproben testet, ob sich die zentralen Tendenzen abhängige Stichproben unterscheiden. Der Friedman-Test wird verwendet, wenn die Voraussetzungen für eine Varianzanalyse nicht erfüllt sind.
+
+Von "abhängigen Stichproben" wird gesprochen, wenn ein Messwert in einer Stichprobe und ein bestimmter Messwert in einer anderen Stichprobe sich gegenseitig beeinflussen. In drei Situationen ist dies der Fall:
+
++ Messwiederholung
++ Natürliche Paare
++ Matching
+    
+Der Friedman-Test ist das nichtparametrische Äquivalent der einfaktoriellen Varianzanalyse mit Messwiederholung und wird angewendet, wenn die Voraussetzungen für ein parametrisches Verfahren nicht erfüllt sind. Nicht-parametrische Verfahren sind auch bekannt als "voraussetzungsfreie Verfahren", weil sie geringere Anforderungen an die Verteilung der Messwerte in der Grundgesamtheit stellen.
+
+
++ Fehlende Normalverteilung
++ Ordinalskalierte AV
++ Aussreißer
++ kleine Stichprobe
+
+Die Fragestellung des Friedman-Tests wird oft so verkürzt: "Unterscheiden sich die zentralen Tendenzen einer Variable zwischen mehreren abhängigen Gruppen, respektive Messzeitpunkten?" 
+
+## 4.	Boxplot
+
+```{r}
+boxplot(uebung19$Aggression ~  uebung19$Betreuer, main = "Boxplot", col = c("hotpink3","tomato", "orange"), xlab = "Beurteilung der Aggressivität des Kindes ", ylab = "Aggressivität")
+```
+Es gibt keine Ausreißer. Es liegt eine deutliche Überschneidung der Bereiche der Eltern vor. 
+
+
+
+## 5.	Deskriptive Statistik
+
+### Variante 1
+```{r}
+# library(dplyr) ->Deskriptive Statistik
+uebung19 %>%
+  group_by(Betreuer) %>%
+  summarize(Anzahl = n(),  Median = median(Aggression)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+Die Mediane unterscheiden sich. Allerdings ist der Unterschied bei den Eltern nur sehr gering. Der Unterschied zwsichen Eltern (Median_Mutter = 32.5, Median_Vater =35, n = 12 ) und Kitapersonal ist deutlicher (Median = 66, n=12). 
+
+
+###  Variante 2:
+
+
+```{r}
+#library(psych)-> Alternative für die deskriptive Statistik
+describeBy(uebung19$Aggression, group=uebung19$Betreuer, mat=TRUE)
+
+
+```
+
+```{r}
+psych::describe.by(uebung19$Aggression, uebung19$Betreuer)
+```
+
+
+# 6.	Ergebnisse des Friedman-Test 
+```{r}
+fried <- friedman.test(Aggression ~ Betreuer |ID,  data = uebung19)
+
+fried
+```
+Wie Abbildung entnommen werden kann, unterscheiden sich die Beurteilung der Aggressivität durch die Betreuer signifikant (Chi-Quadrat(2) = 12.809, p = .0016 , n = 12).
+
+
+Allerdings lässt sich aufgrund dieses Tests nicht bestimmen, welche der drei Personengruppen sich signifikant voneinander unterscheiden. Es ist denkbar, dass sich lediglich ein Paar signifikant unterscheidet und zwischen den übrigen keine signifikanten Unterschiede vorliegen. Daher wird ein Post-hoc-Test durchgeführt.
+
+
+7.	Post – Hoc -Test
+
+
+Obwohl der Friedman-Test zeigt, dass ein Unterschied besteht, muss anhand von Post-hoc-Tests geklärt werden, zwischen welchen Personen signifikante Unterschiede bezüglich der Beurteilungen bestehen.
+
+Bei der Berechnung von Post-hoc-Tests wird im Prinzip für jede Kombination von zwei Paarvergleiche durchgeführt. 
+**k(k-1)/2 -> Berechnung der Tests**
+
+Im aktuellen Beispiel mit drei Gruppen sind dies 3 Tests. Multiple Tests sind jedoch problematisch, da der Alpha-Fehler (die fälschliche Ablehnung der Nullhypothese) mit der Anzahl der Vergleiche steigt. Wird nur ein t-Test mit einem Signifikanzlevel von .05 durchgeführt, so beträgt die Wahrscheinlichkeit des Nicht-Eintreffens des Alpha-Fehlers 95%. Werden jedoch zehn solcher Paarvergleiche vorgenommen, so beträgt die Nicht-Eintreffens-Wahrscheinlichkeit des Alpha-Fehlers (.95)^3 = .8573. Um die Wahrscheinlichkeit des Eintreffens des Alpha-Fehlers zu bestimmen, wird 1 - .8573 = .1426 gerechnet. Die Wahrscheinlichkeit des Eintreffens des Alpha-Fehlers liegt somit bei 14.26%. Diese Fehlerwahrscheinlichkeit wird als “Familywise Error Rate” bezeichnet.
+
+Hierbei wird α durch die Anzahl der Paarvergleiche dividiert. Im hier aufgeführten Fall ist dies .05/3 = .01666. Allerdings wird in dem foldenden Test der p-value angepasst, daher wird auf 0.05 getestet. 
+
+
+
+```{r}
+# library(PMCMR)-> Post-Hoc- Friedman- Gleich_große_Gruppen
+y <- friedman
+y$ID <- NULL
+y <- as.matrix(y)
+#View(y)
+posthoc.friedman.nemenyi.test(y)
+```
+Das p-value muss nicht angepasst werden.   
+Es zeigt sich, dass ein sig. Unterschied zwischen Krippenpersonal und Mütern (p=0.0015), sowie Krippenpersonal und Vätern (p = 0.049) besteht. 
+Zwischen Eltern gibt es keinen Unterschied (p= 0.5). Es ist sinnvoll zwei Gruppen zu bilden: "Eltern" und "Krippenpersonal". 
+
+# 8.	Berechnung der Effektstärke
+
+
+```{r}
+w = sqrt(fried$statistic/12)
+sprintf("Effektstärke: %f2", w)
+```
+Zur Beurteilung der Grösse des Effektes dient die Einteilung:
+
+w = .10 entspricht einem schwachen Effekt
+w = .30 entspricht einem mittleren Effekt
+w = .50 entspricht einem starken Effekt
+
+Damit entspricht die Effektstärke von 1.033 einem starken Effekt.
+
+# 9.	Eine Aussage
+
+Die Beurteilung des Verhalten eines Kindes unterscheidet sich sig. zwischen den Eltern und Krippenpersonal  (Friedman-Test: ((Chi-Quadrat(2) = 12.809, p = .0016 , n = 12)). D
+
+Der Post-Hoc-Test(Nemenyi-Test) zeigt, dass zwei Gruppen sich signifkant unterscheiden (p < 0.05). Es zeigt sich, dass ein sig. Unterschied zwischen Krippenpersonal und Mütern (p=0.0015), sowie Krippenpersonal und Vätern (p = 0.049) besteht. 
+Zwischen Eltern gibt es keinen Unterschied (p= 0.5). Es ist sinnvoll zwei Gruppen zu bilden: "Eltern" und "Krippenpersonal". 
+
+Darüber hinaus ist der Effekt auch noch stark (w= 1.033). H0 wird abgelehnt.
+

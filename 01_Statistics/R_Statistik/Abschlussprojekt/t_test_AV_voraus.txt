@@ -1,0 +1,32 @@
+a. Abhängigkeit der Messungen
+
+✓ Der verbundene t-Test vergleicht zwei abhängige Gruppen. 
+In diesem Beispiel wird Matching über eine ID gegeben, dieselbe ID wurde einer Person im Dorf und einer Person in der Stadt zugeordnet. Wir wissen aus den Daten nicht, was genau das Matchingkriterium in diesem Fall war. Es könnte z.B. entweder dieselbe Person sein, die aus dem Dorf in die Stadt gezogen ist (oder umgekehrt), oder z.B. ein Ehepaar, bei dem einer im Dorf und der andere in der Stadt lebt.
+
+
+b. AV: Skalenniveau - metrisch
+
+✓ Die abhängige Variable (Zufriedenheitsindex) ist intervallskaliert; (Werte 17 - 101)
+
+
+c. UV: Skalenniveau - kategoriel
+
+✓ Die unabhängige Variable (Ort) ist nominalskaliert und hat zwei Ausprägungen (Dorf und Stadt) die die zwei Gruppen definieren. 
+
+
+d. Normalverteilung der Differenz
+
+Der t-Test für abhängige Stichproben überprüft, ob die Mittelwerte zweier abhängiger/gepaarter Stichproben verschieden sind.
+
+Von "abhängigen Stichproben" wird gesprochen, wenn der Messwert und ein bestimmter anderer Messwert sich gegenseitig beeinflussen. In folgende Situationen, die sich für eine verbundene Stichprobe eignen.
+
+Messwiederholung:
+Die Messwerte stammen von der gleichen Person z.B. Messzeitpunkt #1 verglichen mit Messzeitpunkt #2.
+
+Natürliche Paare:
+Die Messwerte stammen von verschiedenen Personen, die aber zusammen gehören:Ehefrau – Ehemann, Psychologe – Patient oder Zwillinge.
+
+Matching:
+Die Messwerte stammen ebenfalls von verschiedenen Personen, die einander zugeordnet wurden. Aufgrund eines vergleichbaren Werts (Drittvariablen) werden Matching-Paare gebildet.
+Der gepaarte t-Test erwartet nicht, dass die Daten in den beiden Gruppen normalverteilt sein müssen, allerdings aber die Differenzen beider Gruppen. Genauer gesagt, bezieht sich diese Annahme auf die Residuen und nicht auf die Daten selbst. 
+(--> siehe die Histogram und QQ-plot der Differenz der Zufriedenheit)

@@ -1,0 +1,26 @@
+Mann-Whitney-U-Test
+
+Aufgabenstellung
+1. Hypothese
+2. Voraussetzungen des Mann-Whitney-U-Tests
+3. Grundlegende Konzepte
+4. Deskriptive Statistik
+5. Boxplot
+6. Ergebnisse des Mann-Whitney-U-Tests
+7. Berechnung der Effektstärke
+8. Eine Aussage
+
+Beschreibung
+Bauch vs. Kopf - Welche Entscheidung ist besser? Im Rahmen einer Studio soll untersucht werden, ob Bauchentscheidung im Alltag besser Ergebnisse liefern als Kopfentscheidungen. Daher wurde folgendes Experiment aufgesetzt. 19 Teilnehmer sollen sich für einen Jogurt entscheiden. Zur Auswahl stehen 80 Sorten. 11 Teilnehmer entscheiden sich aus dem Bauch heraus. 8 Teilnehmer sollen durch Abwägung entscheiden, welcher der optimal Wahl ist. Insgesamt haben die Teilnehmer 2 Minuten Zeit. Schlussendlich wird der Jogurt getestet und die Entscheidung soll von 1-15 beurteilt werden. Je niedriger der Wert, desto schlechter die Wahl.
+
+Daten
+Variable1: BauchODERKopf
+Varibale2: Beurteilung
+
+library(exactRankTests)#-> U-Test
+# library(exactRankTests) -> Mann-Whitney-U-Tests
+
+test <- wilcox.exact(uebung6$Beurteilung ~ uebung6$KopfODERBauch, data=uebung6, conf.int=T, conf.level =0.95, alternative="two.sided")
+test
+
+Ist dies nicht der Fall, so wird die exakte Signifikanz verwendet.

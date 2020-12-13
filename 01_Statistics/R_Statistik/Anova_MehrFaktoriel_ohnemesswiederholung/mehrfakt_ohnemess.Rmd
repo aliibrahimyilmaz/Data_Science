@@ -1,0 +1,364 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# Die mehrfaktorielle Varianzanalyse mit R (ohne Messwiederholung)
+
+#Roadmap
+##1) Hypothese 
+##2) Voraussetzungen für die mehrfaktorielle Varianzanalyse (ohne Messwiederholung) 
+##3) Normalverteilung 
+##4) Grundlegende Konzepte
+##5) Boxplot
+##6) Deskriptive Statistiken 
+##7) Profildiagramm
+##8) Levene -Test
+    #### Homogenität
+##9) Ergebnisse der mehrfaktorielle Varianzanalyse (ohne Messwiederholung)
+    #### Welch oder nicht
+    #### Post-Hoc
+    #### Eta-Quadrat
+    #### Effekt stärke
+##10) Eine Aussage
+
+# Aufgabe:
+
+Du machst eine Bar auf nach dem Studium. Statistik hat die aber so gut gefallen, dass du eine Studie durchführst mit 125 Studierende. Zusätzlich wurden zwei mögliche Einflussfaktoren erhoben: die Alkoholgehalt (3 Erfahrungsstufen) und das Geschlecht. Haben Alkoholgehalt und Geschlecht einen Einfluss auf die Anzahl der gesungenen Songs? Liegt eine Interaktion zwischen Alkoholgehalt und Geschlecht vor?
+
+Der zu analysierende Datensatz enthält neben einer Personennummer (ID) den Anzahl der gesungenen Songs (Songs) sowie die Gruppierungsvariablen Alkoholgehalt (5%, 15%, 35%) und Geschlecht (männlich, weiblich).
+
+```{r}
+library(readxl)
+mehranova <- read_excel("mehranova.xlsx")
+View(mehranova)
+```
+
+
+```{r}
+mehranova$Alkohol<-factor(mehranova$Alkohol, levels=c("gering", "mittel", "hoch")) 
+```
+
+## Daten
+Variable1: Geschlecht (Faktor-1)
+Variable2: Alkoholgehalt (Faktor-2)
+Varibale3: die Anzahl der gesungenen Songs (AV)
+
+# 1) Hypothese
+
+### Haupteffekt A
+H0:Es gibt keinen Unterschied zwischen dem Geschlecht und der gesungenen Anzahl an Songs.
+H1:Es gibt einen Unterschied zwischen dem Geschlecht und der gesungenen Anzahl an Songs.
+
+### Haupteffekt B
+H0:Es gibt einen Unterschied zwischen dem Alkoholgehalt und der gesungenen Anzahl an Songs.
+H1:Es gibt einen Unterschied zwischen dem Alkoholgehalt und der gesungenen Anzahl an Songs.
+
+### Interaktion AxB
+H1: Es gibt einen Unterschied zwischen dem Geschlecht, bzw. dem Alkoholgehalt des ersten Getränkes und der Anzahl der gesungenen Songs.
+H0: Es gibt keinen Unterschied zwischen dem Geschlecht, bzw. dem Alkoholgehalt des ersten Getränkes und der Anzahl der gesungenen Songs.
+
+# 2) Voraussetzungen für die mehrfaktorielle Varianzanalyse (ohne Messwiederholung)
+
+Die abhängige Variable ist intervallskaliert -> ist gegeben, sogar absolutskaliert.
+
+Die unabhängigen Variablen (Geschlecht und Alkoholgehalt) sind kategorial (nominal- oder ordinalskaliert) -> sind sie.
+
+Die durch die Faktoren gebildeten Gruppen sind unabhängig -> Entweder ist der Gast biologisch weiblich / männlich , bzw. der Alkoholgehalt des ersten Getränkes ist entweder 0.05 | 0.15 | 0.35.
+
+Die abhängige Variablen ist normalverteilt innerhalb jeder der Gruppen. Ab 25 Probanden pro Gruppe sind Verletzungen dieser Voraussetzung unproblematisch-> siehe Histogramm
+
+Homogenität der Varianzen: Die Gruppen stammen aus Grundgesamtheiten mit annähernd identischen Varianzen der abhängigen Variablen -> siehe Levene-Test
+
+# Deskriptive Statistiken + Prüfung der Voraussetzung
+
+# 3) Histogramm zur Prüfung der Normalvertweilung
+
+### Alkohol
+
+```{r}
+library(dplyr)
+library(ggplot2)
+mehranova %>%
+  group_by(Alkohol) %>%
+  ggplot(aes(Songs, color=Alkohol)) + 
+  geom_histogram(aes(fill = Alkohol), bins = 20) +
+  facet_wrap(~Alkohol) +
+  theme_grey()+
+  labs(x= "Anzahl der Songs",y = "Anzahl" )
+```
+
+Die Daten sind normalverteilt innerhalb der Gruppe Alkohol und Anzahl der gesungenen Songs.
+
+### Geschlecht
+
+```{r}
+
+mehranova %>%
+  group_by(Geschlecht) %>%
+  ggplot(aes(Songs, color=Geschlecht)) + 
+  geom_histogram(aes(fill = Geschlecht), bins = 10) +
+  facet_wrap(~Geschlecht) +
+  theme_grey()+
+  labs(x= "Anzahl der Songs",y = "Anzahl" )
+```
+
+Die Daten sind normalverteilt innerhalb der Gruppe Geschlecht und Anzahl der gesungenen Songs, nicht sehr schön. Ab 25 Teilnehmer pro Gruppe ist das Testverfahren robust.
+
+### Alkohol~Geschlecht
+
+```{r}
+mehranova$Geschlecht<-factor(mehranova$Geschlecht, levels=c("w", "m"))
+ggplot(mehranova, aes(x=Songs, fill=Geschlecht))+
+geom_histogram(bins = 25)+
+theme_grey()+
+facet_wrap(Alkohol~Geschlecht, ncol = 2)
+```
+### Alternativ (Alkohol~Geschlecht)
+
+```{r}
+ggplot()+
+geom_histogram(data = mehranova, aes(Songs,
+fill = paste(Alkohol, Geschlecht, sep = ", ")))+
+scale_fill_brewer(palette = "Dark2", guide = FALSE)+
+
+facet_wrap(Alkohol~Geschlecht)
+```
+
+
+Ab 25 Teilnehmer pro Gruppe ist das Testverfahren robust. Jedoch gibt es Schwierigkeiten bei der Normalverteilung bei mittlerem Alkoholgehalt bei den weiblichen Barbesuchern.
+
+# 4) Grundlegende Konzept
+
+Die mehrfaktorielle Varianzanalyse untersucht, ob sich die Mittelwerte mehrerer unabhängiger Gruppenunterscheiden, die durch mehrere kategoriale unabhängige Variable definiert werden.
+Diese UV werden bei der ANOVA als "Faktoren" bezeichnet. Die Ausprägungen der unabhängigen Variable werden "Faktorstufen" genannt (eng."Treatments")
+
+Im Rahmen einer Varianzanalyse wird die Varianz zwischen den Gruppen mit der Varianz innerhalb der Gruppen verglichen.Die Fragestellung der mehrfaktoriellen Varianzanalyse könnte sein: "Unterscheiden sich die Mittelwerte einer abhängigen Variable zwischen mehreren Gruppen? Welche Faktorstufen unterscheiden sich? Gibt es Effekte?"
+
+#### Haupteffekte und Interaktionseffekte
+
+Der direkte Effekt eines Faktors auf die abhängige Variable wird als Haupteffekt bezeichnet. Im Beispiel sind dies der Haupteffekt der Alkoholgehalt und der Haupteffekt des Geschlechts. Eine Interaktion zweier Faktoren dagegen bedeutet, dass die beiden Faktoren in komplexer Weise zusammenwirken. Dies ist nicht rein additiv zu verstehen. Liegt eine Interaktion vor, so ist die Wirkung des einen Faktors abhängig von der Ausprägung des anderen Faktors und umgekehrt. Im Beispiel gesprochen hiesse dies, dass der Effekt des Geschlechts auf die Anzahl der gesungen Songs sich je nach Alkoholgehalt unterscheidet, und umgekehrt, dass der Effekt der Alkoholgehalt je nach Geschlecht unterschiedlich ausfiele.
+
+R schliesst automatisch alle möglichen Interaktionen in das Modell mit ein: Bei zwei Faktoren A und B ist dies die Interaktion A x B. Bei drei Faktoren A, B und C sind dies die Interaktion A x B, A x C, B x C sowie die Dreifachinteraktion A x B x C.
+
+# 5) Boxplot
+
+```{r}
+ggplot(mehranova, aes(Geschlecht, Songs, fill=factor(Alkohol))) +
+geom_boxplot() +
+theme_minimal()+
+labs(fill = "Alkoholniveau", x="Geschlecht", y="Anzahl Songs")
+```
+
+# 6) Deskriptive Statistiken
+
+```{r}
+mehranova %>%
+group_by(Alkohol) %>%
+  summarize(Anzahl = n(), Mittelwert = mean(Songs), Median = median(Songs), Standardabweichung = sd(Songs)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+
+Bei geringem Alkoholgehalt werden 2.66 Songs im Schnitt gesungen (SD = 1.15, =50). Bei mittlerem Alkoholgehalt singen die Barbesucher 5.88 Songs im Durchschnitt (SD = 1.92, n=50). Bei hoher Alkoholgehalt singen die Barbesucher deutlich mehr Songs - im Schnitt 11 Songs (SD = 2.54, n=50).
+
+```{r}
+mehranova %>%
+group_by(Geschlecht) %>%
+  summarize(Anzahl = n(), Mittelwert = mean(Songs), Median = median(Songs), Standardabweichung = sd(Songs)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+
+Es zeichnet sich ein schwieriges Bild. Der Geschlechterunterschied ist nur minimal. Barbesucher singen 6.44 Songs im Schnitt, wohingegen Barbesucherinnen 6.59 Songs singen. Darüber hinaus zeigen auch die Standardabweichung und der Mittelwert, dass wahrscheinlich keine Signifikanz vorliegt.
+
+```{r}
+mehranova %>%
+group_by(Geschlecht, Alkohol) %>%
+  summarize(Anzahl = n(), Mittelwert = mean(Songs), Median = median(Songs), Standardabweichung = sd(Songs)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+
+Bei geringer Alkoholgehalt singen die Männer (M = 3.24, SD = 1.164) mehr Songs als die Frauen (M = 2.08, SD = .81). Dies ist auch bei mittlerer Alkoholgehalt ebenfalls der Fall (Männer: M = 6.8, SD = 1.75; Frauen: M = 4.96, SD = .1.64). Bei hoher Alkoholgehalt ist es genau umgekehrt: Die Frauen (M = 12.72, SD = 2.03) singen deutlich mehr Songs als die Männer(M = 9.28, SD = 1.69).
+
+### Alternative
+
+```{r}
+mittel <-tapply(mehranova$Songs, list(mehranova$Alkohol, mehranova$Geschlecht), mean, na.rm=TRUE)
+mittel
+```
+
+```{r}
+sd <-tapply(mehranova$Songs, list(mehranova$Alkohol, mehranova$Geschlecht), sd, na.rm=TRUE)
+sd
+```
+
+```{r}
+anzahlprogruppe <- tapply(mehranova$Songs, list(mehranova$Alkohol, mehranova$Geschlecht), function(x) sum(!is.na(x)))
+anzahlprogruppe
+```
+
+# 7) Profildiagramm:
+
+```{r}
+ggplot(mehranova, aes(x=Alkohol, y=Songs, group=Geschlecht, fill=Geschlecht, color=Geschlecht))+
+  stat_summary(fun.y = mean, geom="point", size=3)+
+  stat_summary(fun.y = mean, geom="line")+
+  stat_summary(fun.data = mean_cl_normal, geom="errorbar",width=.2, size=.25)+
+  labs(x="Alkohol", y="Anzahl der Songs")+
+  theme_classic()
+```
+
+
+# 8) Levene -Test
+
+Der Levene-Test prüft die Nullhypothese, dass die Varianzen der Gruppen sich nicht unterscheiden. Ist der Levene-Test nicht signifikant, so kann von homogenen Varianzen ausgegangen. Wäre der Levene-Test jedoch signifikant, so wäre eine der Grundvoraussetzungen der Varianzanalyse verletzt. Gegen leichte Verletzungen gilt die Varianzanalyse als robust; vor allem bei genügend grossen und etwa gleich grossen Gruppen sind Verletzungen nicht problematisch. Bei ungleich grossen Gruppen führt eine starke Verletzung der Varianzhomogenität zu einer Verzerrung des F-Tests. Alternativ können dann auf den Brown-Forsythe-Test oder den Welch-Test zurückgegriffen werden. Dabei handelt es sich um adjustierte F-Tests.
+
+```{r}
+library(car)
+```
+
+```{r}
+leveneTest(Songs ~ Alkohol*Geschlecht, data = mehranova, center = "mean")
+```
+
+Im vorliegenden Beispiel ist der Levene-Test signifikant (F(5,144) = 5.626, p < .000 ), so dass von Varianzheterogenität ausgegangen werden kann. Da die Varianzen leider nicht gleich sind, ist es zu empfehlen eine Korrektur mithilfe des Welch-Tests durchzuführen.
+
+### Entscheiungsregeln
+Mit Welch-Korrektur: p < 0.05 => Ergebnis Signifikant –> Varianzen heterogen
+
+Ohne Welch-Korrektur: p > 0.05 => Ergebnis nicht Signifikant –> Varianzen homogen –> H0 mit Annahme Var1=Var2=… -> Var_n wird angenommen
+
+# 9) Ergebnisse der mehrfaktorielle Varianzanalyse (ohne Messwiederholung)
+
+## Homogenität
+
+### Keine Welch-Korrektur
+
+```{r}
+mehrAnova1 <- lm(Songs ~ Geschlecht*Alkohol, data = mehranova)
+myAnova <- Anova(mehrAnova1 , type = 3)
+myAnova
+```
+
+### mit Welch-Korrektur
+
+```{r}
+geschlechtwelch <- oneway.test(Songs~Geschlecht, data = mehranova, var.equal = F)
+geschlechtwelch
+```
+
+Für den Faktor Geschlecht wird kein Haupteffekt ersichtlich. Die Anzahl der gesungenen Songs scheint demnach unabhängig vom Geschlecht zu sein (F(1,122.72) = .0512, p = .8213).
+
+```{r}
+alkoholwelch <- oneway.test(Songs~Alkohol, data = mehranova, var.equal = F)
+alkoholwelch
+```
+
+Es gibt einen Haupteffekt der Alkoholgehalt auf die Anzahl der gesungenen Songs (F(2,88.419) = 238.45, p < .000). Das bedeutet, dass Gäste der Karaoke-Bar in Abhängigkeit des Alkoholgehalt unterschiedlich viele Songs singen.
+
+```{r}
+AXBwelch <- oneway.test(Songs~Alkohol*Geschlecht, data = mehranova, var.equal = F)
+AXBwelch 
+```
+
+Der Interaktionsterm von Alkoholgehalt und Geschlecht auf die Anzahl der gesungenen Songs ist signifikant (F(5,65.716) = 173.72, p < .000). Der Effekt von Alkoholgehalt hängt demnach zu einem gewissen Teil vom Geschlecht ab.
+
+## Post-Hoc-Test
+
+Ist ein Haupteffekt oder eine Interaktion signifikant, so ist zwar bestätigt, dass ein Effekt vorliegt, doch ist nach wie vor unklar, welche Faktorstufen sich unterscheiden, sobald ein Faktor mehr als zwei Ausprägungen aufweist. (Bei zwei Ausprägungen unterscheiden sich eben diese zwei Ausprägungen voneinander, sonst wäre der F-Test nicht signifikant.) Im vorliegenden Beispiel liegen ein Effekt der Alkoholgehalt sowie ein Interaktionseffekt vor. Post-hoc-Tests können einfach eingesetzt werden, um zu prüfen, welche Levels der Alkoholgehalt sich unterscheiden. Für die Interaktion ist dies in SPSS nicht implementiert.
+
+Wie bereits erwähnt wurde, beinhaltet der Faktor Alkoholgehalt drei Stufen. Aus dem signifikanten Haupteffekt lässt sich nicht ableiten, welche der Faktorstufen einen signifikant unterschiedlichen Einfluss auf die abhängige Variable haben. Zu diesem Zweck werden Tukey-korrigierte Mehrfachvergleiche berechnet.
+
+Bei der Berechnung von Post-hoc-Tests wird im Prinzip für jede Kombination von zwei Mittelwerten ein t-Test durchgeführt. Im aktuellen Beispiel der Alkoholgehalt mit drei Gruppen, bzw. zwei Gruppen sind dies 15 Tests. Multiple Tests sind jedoch problematisch, da der Alpha-Fehler (die fälschliche Ablehnung der Nullhypothese) mit der Anzahl der Vergleiche steigt. Wird nur ein t-Test mit einem Signifikanzlevel von .05 durchgeführt, so beträgt die Wahrscheinlichkeit des Nicht-Eintreffens des Alpha-Fehlers 95%. Werden jedoch 15 solcher Paarvergleiche vorgenommen, so beträgt die Nicht-Eintreffens-Wahrscheinlichkeit des Alpha-Fehlers (.95)^15 = .4632. Um die Wahrscheinlichkeit des Eintreffens des Alpha-Fehlers zu bestimmen, wird 1 -.4632 = .5367 gerechnet. Die Wahrscheinlichkeit des Eintreffens des Alpha-Fehlers liegt somit bei 53.67%. Diese Fehlerwahrscheinlichkeit wird als “Familywise Error Rate” bezeichnet.
+
+Um dieses Problem zu beheben, kann zum Beispiel die Tukey-Korrektur angewendet werden. Hierbei wird α durch die Anzahl der Paarvergleiche dividiert. Im hier aufgeführten Fall ist dies .05/15 = .00333. Bei diesem Kozept handelt es sich um eine allgemeine Information.
+
+Die Tukey berücksichtigt die Korrektur, daher kann weiter gegen 0.05 getestet werden.
+
+```{r}
+PostHoc <- aov(Songs ~ Geschlecht*Alkohol, data=mehranova) 
+#Alternativ auch der Name des Zwischenspeichers "mehr" - PostHoc <- aov(mehr)  
+TukeyHSD(PostHoc)
+```
+Wie vermutet, zeichnet sich bei Geschlecht keine signifikant ab. Die Alkoholgehaltskombinationen unterscheiden sich signifikant.
+
+Für das vorliegende Beispiel wird ersichtlich, dass sich der Alkoholgehalt und das Geschlecht bezüglich der gesungenen Songs signifikant unterscheiden (p < .05). Jedoch kann kein Unterschied für das Geschlecht mit einer geringem Alkoholgehalt von 0.05 Prozent festgestellt werden (p =.10133). Es können 5 Gruppen gebildet werden.
+
+## Das par. Eta-Quadrat
+
+Das partielle Eta-Quadrat (partielles η2) ist in Abbildung ausgegeben. Es ist ein Mass für die Effektgrösse: Es setzt die Variation, die durch einen Faktor erklärt wird, in Bezug mit jener Variation, die nicht durch andere Faktoren im Modell erklärt wird. Das heisst, es wird ausschliesslich jene Variation betrachtet, welche nicht durch die anderen Faktoren im Modell erklärt wird. Das partielle Eta-Quadrat zeigt, welchen Anteil davon ein Faktor erklärt:
+
+```{r}
+library(sjstats)
+
+eta <- eta_sq(mehrAnova1, partial = TRUE)
+eta
+```
+
+Im vorliegenden Beispiel ist der Effekt des Geschlechts nicht signifikant. Daher wird dessen partielles Eta-Quadrat nicht betrachtet. Für die Alkoholgehalt beträgt das partielle Eta-Quadrat .833. Das heisst, die Alkoholgehalt erklärt 83,3% derjenigen Fehlervariation, die das Modell hätte, wäre Alkoholgehalt nicht im Modell. Das partielle Eta-Quadrat der Interaktion beträgt .367 und erklärt daher 36.7% der ohne die Interaktion ungeklärten Variation.
+
+## Berechnung der Effektstärke
+
+$$f=\sqrt\frac{\eta^{2}}{1-\eta^{2}}=\sqrt\frac{eta^{2}}{1-eta^{2}}$$
+
+Effektstärke fürs Geschlecht:
+
+```{r}
+effgender <- sqrt(eta$partial.etasq[1]/(1-eta$partial.etasq[1]))
+
+sprintf("Effektstärke fürs Geschlecht: f= %.3f", effgender)
+```
+
+Effektstärke fürs Alkoholgehalt:
+
+```{r}
+effalk <- sqrt(eta$partial.etasq[2]/(1-eta$partial.etasq[2]))
+
+sprintf("Effektstärke fürs Alkoholgehalt: f= %.3f",effalk)
+```
+
+
+Effektstärke für die Interaktion:
+
+```{r}
+
+effAxB <- sqrt(eta$partial.etasq[3]/(1-eta$partial.etasq[3]))
+
+sprintf("Effektstärke für die Interaktion: f= %.3f",effAxB)
+```
+
+Um zu beurteilen, wie gross dieser Effekt ist, kann man sich an der Einteilung von Cohen (1988) orientieren:
+
+f = .10 entspricht einem schwachen Effekt
+f = .25 entspricht einem mittleren Effekt
+f = .40 entspricht einem starken Effekt
+
+Damit entsprechen die Effektstärken von 2.23 und 0.76 einem starken Effekt. Für Geschlecht liegt natürlich kein Effekt vor - es sei nur der Vollständigkeit erwähnt.
+
+# 10) Eine Aussage
+
+Es zeigt sich, dass es keinen Unterschied zwichen dem Geschlecht und der Anzahl an gesungenen Songs allein gibt (F(1,122.72) = .0512, p = .8213). H0 für den Haupteffekt A wird angenommen. Allerdings je nach Alkoholgehalt des ersten Getränkes gibt es einen Unterschied zwischen den gesungenen Songs (F(2,88.419) = 238.45, p < .000). H0 für den Haupteffekt B wird verworfen. Der Interaktionsterm von Alkoholgehalt und Geschlecht auf die Anzahl der gesungenen Songs ist signifikant (F(5,65.716) = 173.72, p < .000). Der Effekt von Alkoholgehalt hängt demnach zu einem gewissen Teil vom Geschlecht ab. H0 für den Interaktion AxB wird verworfen.
+
+Der PostHoc wurde mit Tukey durchgeführt. Für Geschlecht zeigte sich keine signifikant ab (p = .5684). Es zeigt, dass sich alle Gruppen für Alkoholgehalt signifikant unterscheiden: Gering (M = 2.66, SD = 1.15, N=50), mittlere Alkoholniveau (M = 5.88, SD = 1.92, N=50) und hohe Alkoholniveau (M = 11, SD = 2.54, N=50). Zudem zeigt sich eine signifikante Interaktion von Geschlecht und Alkoholgehalt auf die Anzahl der gesungenen Songs.Dies weist darauf hin, dass sich Alkoholgehalt je nach Geschlecht unterschiedlich auswirkt. Bei geringerem Alkoholgehalt lag Männer (M = 3.24, SD = 1.164) über jenem der Frauen (M = 2.08, SD = .81), allerdings konnte der Unterschied im Post-Hoc nicht bestätigt werden. Bei mittlerer Alkoholgehalt (Männer: M = 6.8, SD = 1.75; Frauen: M = 4.96, SD = 1.64) konnte der Mittelwertsunterschied bestätigt werden. Bei hohem Alkoholgehalt verhält es sich genau andersrum - Frauen sangen (M = 12.72, SD = 2.03) deutlich mehr Songs als die Männer (M = 12.72, SD = 2.03). Das Ergebnis konnte bestätigt werden.
+
+Die Effektstärken sind sowohl für den Haupteffekt der Alkoholgehalt (f = 2.23) als auch für die Interaktion (f = 0.76) nach Cohen (1988) ein starker Effekt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

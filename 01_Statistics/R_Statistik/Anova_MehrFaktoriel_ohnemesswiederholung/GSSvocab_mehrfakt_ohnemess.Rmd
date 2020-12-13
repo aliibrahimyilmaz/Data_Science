@@ -1,0 +1,396 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# Aufgabe: Mehrfaktorielle Varianzanalyse (ohne Messwiederholung)
+
+### A data frame with 28867 observations on the following 8 variables.
+
+### year:
+a factor with levels 1978 1982 1984 1987 1988 1989 1990 1991 1993 1994 1996 1998 2000 2004 2006 2008 2010 2012 2014 2016. Data are included from the GSS for each of these years.
+
+### gender:
+a factor with levels female male
+
+### nativeBorn:
+Was the respondent born in the US? A factor with levels no and yes.
+
+### ageGroup:
+a factor with levels 18-29 30-39 40-49 50-59 60+, grouped age of the respondent.
+
+### educGroup:
+a factor with levels <12 yrs, 12 yrs, 13-15 yrs, 16 yrs, >16 yrs, grouped education level of the respondent. 12 years corresponds to high school graduate, 16 years to college graduate.
+
+### vocab:
+Number of words out of 10 correct on a vocabulary test
+
+### age:
+age of the respondent in years
+
+### educ:
+years of education of the respondent
+------------------------------------------------------------
+# Beschreibung
+
+Welchen Einfluss hat das Geschlecht(Männer/Frauen) und die Bildungsgruppe (<12, 12, 13-15, 16, >16) auf die Anzahl der richtigen Wörter in einem Worttest?
+Findet Sie heraus, ob es einen Unterschied gibt?
+
+### Daten
+Variable1: gender (Faktor-1)
+Variable2: educGroup (Faktor-2)
+Varibale3: vocab (AV)
+
+```{r}
+library(readr)
+mehranova <- read_csv("GSSvocab.csv")
+View(mehranova)
+```
+
+```{r}
+mehranova$educGroup<-factor(mehranova$educGroup, levels=c("<12 yrs", "12 yrs", "13-15 yrs", "16 yrs", ">16 yrs")) 
+```
+
+```{r}
+mehranova <- subset(mehranova, select=c(gender, educGroup, vocab))
+View(mehranova)
+```
+
+```{r}
+# wie viele NA-Werte
+sum(is.na(mehranova))
+
+# Auslassen der NA-Werte 
+mehranova <- na.omit(mehranova)
+```
+
+```{r}
+sum(is.na(mehranova))
+```
+
+# 1) Hypothese
+
+Variable1: gender (Faktor-1)
+Variable2: educGroup (Faktor-2)
+Varibale3: vocab (AV)
+
+### Haupteffekt A
+
+H0:Es gibt keinen Unterschied zwischen dem Geschlecht und der Anzahl der Wörter.
+
+H1:Es gibt einen Unterschied zwischen dem Geschlecht und der Anzahl der Wörter.
+
+### Haupteffekt B
+
+H0:Es gibt einen Unterschied zwischen der Bildungsgruppe und der Anzahl der Wörter.
+
+H1:Es gibt einen Unterschied zwischen der Bildungsgruppe und der Anzahl der Wörter.
+
+### Interaktion AxB
+
+H1: Es gibt einen Unterschied zwischen dem Geschlecht, bzw. der Bildungsgruppe und der Anzahl der Wörter.
+
+H0: Es gibt keinen Unterschied zwischen dem Geschlecht, bzw. der Bildungsgruppe und der Anzahl der Wörter.
+
+# 2) Voraussetzungen für die mehrfaktorielle Varianzanalyse (ohne Messwiederholung)
+
+Die abhängige Variable  (vocab) ist intervallskaliert -> ist gegeben, sogar absolutskaliert.
+
+Die unabhängigen Variablen (gender und educGroup) sind kategorial (nominalskaliert, ordinalsckaliert) -> sind sie.
+
+Die durch die Faktoren gebildeten Gruppen sind unabhängig -> Entweder ist der Person Mann / Frau, bzw. die Bildungsgruppe ist entweder <12, 12, 13-15, 16 oder >16 Jahre.
+
+Die abhängige Variable (vocab) ist normalverteilt innerhalb jeder der Gruppen. Ab 25 Probanden pro Gruppe sind Verletzungen dieser Voraussetzung unproblematisch-> siehe Histogramm
+
+Homogenität der Varianzen: Die Gruppen stammen aus Grundgesamtheiten mit annähernd identischen Varianzen der abhängigen Variablen -> siehe Levene-Test
+
+# 3) Normalverteilung
+
+### educGroup
+
+```{r}
+library(dplyr)
+library(ggplot2)
+mehranova %>%
+  group_by(educGroup) %>%
+  ggplot(aes(vocab, color=educGroup)) + 
+  geom_histogram(aes(fill = educGroup), bins = 11) +
+  facet_wrap(~educGroup) +
+  theme_grey()+
+  labs(x= "vocab",y = "Anzahl" )
+```
+
+Die Daten sind normalverteilt innerhalb der Gruppe Bildungsgruppe und der Anzahl der Wörter. 
+
+### gender
+
+```{r}
+
+mehranova %>%
+  group_by(gender) %>%
+  ggplot(aes(vocab, color=gender)) + 
+  geom_histogram(aes(fill = gender), bins = 11) +
+  facet_wrap(~gender) +
+  theme_grey()+
+  labs(x= "vocab",y = "Anzahl" )
+```
+
+Die Daten sind normalverteilt innerhalb der Gruppe Geschlecht und Anzahl der Wörter. 
+
+### educGroup~gender
+
+```{r}
+ggplot(mehranova, aes(x=vocab, fill=gender))+
+geom_histogram(bins = 10)+
+theme_grey()+
+facet_wrap(educGroup~gender, ncol = 5)
+```
+Die Daten sind normalverteilt.
+
+### Alternativ (educGroup~gender)
+
+```{r}
+ggplot()+
+geom_histogram(data = mehranova, aes(vocab,
+fill = paste(educGroup, gender, sep = ", ")), bins = 10)+
+scale_fill_brewer(palette = "Paired", guide = FALSE)+
+
+facet_wrap(educGroup~gender, ncol = 5)
+```
+
+Ab 25 Teilnehmer pro Gruppe ist das Testverfahren robust und es sieht so aus, dass die Daten normalverteilt sind.
+
+# 4) Grundlegende Konzepte
+
+Die mehrfaktorielle Varianzanalyse untersucht, ob sich die Mittelwerte mehrerer unabhängiger Gruppenunterscheiden, die durch mehrere kategoriale unabhängige Variable definiert werden.
+Diese UV werden bei der ANOVA als "Faktoren" bezeichnet. Die Ausprägungen der unabhängigen Variable werden "Faktorstufen" genannt (eng."Treatments")
+
+Im Rahmen einer Varianzanalyse wird die Varianz zwischen den Gruppen mit der Varianz innerhalb der Gruppen verglichen.Die Fragestellung der mehrfaktoriellen Varianzanalyse könnte sein: "Unterscheiden sich die Mittelwerte einer abhängigen Variable zwischen mehreren Gruppen? Welche Faktorstufen unterscheiden sich? Gibt es Effekte?"
+
+#### Haupteffekte und Interaktionseffekte
+
+Der direkte Effekt eines Faktors auf die abhängige Variable wird als Haupteffekt bezeichnet. Im Beispiel sind dies der Haupteffekt der Ernaerung und der Haupteffekt der Sportlichkeit. Eine Interaktion zweier Faktoren dagegen bedeutet, dass die beiden Faktoren in komplexer Weise zusammenwirken. Dies ist nicht rein additiv zu verstehen. Liegt eine Interaktion vor, so ist die Wirkung des einen Faktors abhängig von der Ausprägung des anderen Faktors und umgekehrt. Im Beispiel gesprochen hiesse dies, dass der Effekt der Sportlichkeit auf die Gesundheitsindex sich je nach Ernaerung unterscheidet, und umgekehrt, dass der Effekt der Ernaerung je nach Sportlichkeit unterschiedlich ausfiele.
+
+R schliesst automatisch alle möglichen Interaktionen in das Modell mit ein: Bei zwei Faktoren A und B ist dies die Interaktion A x B. Bei drei Faktoren A, B und C sind dies die Interaktion A x B, A x C, B x C sowie die Dreifachinteraktion A x B x C.
+
+# 5) Boxplot
+
+```{r}
+ggplot(mehranova, aes(gender, vocab, fill=factor(educGroup))) +
+geom_boxplot() +
+theme_minimal()+
+labs(fill = "educGroup", x="gender", y="vocab")
+```
+
+```{r}
+ggplot(mehranova, aes(educGroup, vocab, fill=factor(gender))) +
+geom_boxplot() +
+theme_minimal()+
+labs(fill = "gender", x="educGroup", y="vocab")
+```
+Es gibt einige Ausreißer, aber nicht viele.
+
+# 6) Deskriptive Statistiken
+
+### educGroup
+
+```{r}
+mehranova %>%
+group_by(educGroup) %>%
+  summarise(Anzahl = n(), Mittelwert = mean(vocab), Median = median(vocab), Standardabweichung = sd(vocab)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+Die Menschen, die über 16 Jahren Bildungsdauer haben, können durschnitlich 7.67 Wörter kennen (SD = 1.88, n=3093). Dagegen können die Menschen, die weniger als 12 Jahren Bildungsdauer haben, durschnitlich 4.48 Wörter kennen (SD = 1.98, n=5285). Je höher die Bildungsgruppe ist, desto besser ist das Ergebnis der Prüfung.
+
+### gender
+
+```{r}
+mehranova %>%
+group_by(gender) %>%
+  summarise(Anzahl = n(), Mittelwert = mean(vocab), Median = median(vocab), Standardabweichung = sd(vocab)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+Es zeichnet sich deutlich, dass der Sportlichkeitunterschied ist maximal. Sportlicher (M=56.98, SD=24.56, n=100) sind gesunder als Unsportlicher (M=36.95, SD=26.67, n=100). 
+
+### educGroup~gender
+
+```{r}
+mehranova %>%
+group_by(gender, educGroup) %>%
+  summarize(Anzahl = n(), Mittelwert = mean(vocab), Median = median(vocab), Standardabweichung = sd(vocab)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+Bei Mischkost sind sportliche Menschen (M = 83.16, SD = 4.13) gesunder als unsportliche Menschen (M = 74.52, SD = 3.50). Dies ist auch bei alle anderen ebenfalls der Fall. Bei sportliche Vegan (M = 33.72, SD = 2.41) ist der Gesundheitsindex deutlich stark gestiegen (unsportliche Vegan -> M = 6.48, SD = 2.33). Dies ist auch bei sportlichen vegetarischen Esser (M = 76.32, SD = 12.19) ebenfalls der Fall (unsportliche vegetarischen Esser -> M = 46.40, SD = 8.48).
+
+
+### Alternative
+
+```{r}
+mittel <-tapply(mehranova$vocab, list(mehranova$educGroup, mehranova$gender), mean, na.rm=TRUE)
+mittel
+```
+
+```{r}
+sd <-tapply(mehranova$vocab, list(mehranova$educGroup, mehranova$gender), sd, na.rm=TRUE)
+sd
+```
+
+```{r}
+anzahlprogruppe <- tapply(mehranova$vocab, list(mehranova$educGroup, mehranova$gender), function(x) sum(!is.na(x)))
+anzahlprogruppe
+```
+
+# 7) Profildiagramm
+
+```{r}
+ggplot(mehranova, aes(x=educGroup, y=vocab, group=gender, fill=gender, color=gender))+
+  stat_summary(fun = mean, geom="point", size=3)+
+  stat_summary(fun = mean, geom="line")+
+  stat_summary(fun.data = mean_cl_normal, geom="errorbar",width=.2, size=.25)+
+  labs(x="educGroup", y="vocab")+
+  theme_classic()
+```
+
+# 8) Levene -Test (Homogenitaet)
+
+Der Levene-Test prüft die Nullhypothese, dass die Varianzen der Gruppen sich nicht unterscheiden. Ist der Levene-Test nicht signifikant, so kann von homogenen Varianzen ausgegangen. Wäre der Levene-Test jedoch signifikant, so wäre eine der Grundvoraussetzungen der Varianzanalyse verletzt. Gegen leichte Verletzungen gilt die Varianzanalyse als robust; vor allem bei genügend grossen und etwa gleich grossen Gruppen sind Verletzungen nicht problematisch. Bei ungleich grossen Gruppen führt eine starke Verletzung der Varianzhomogenität zu einer Verzerrung des F-Tests. Alternativ können dann auf den Brown-Forsythe-Test oder den Welch-Test zurückgegriffen werden. Dabei handelt es sich um adjustierte F-Tests.
+
+```{r}
+library(car)
+```
+
+```{r}
+leveneTest(vocab ~ educGroup*gender, data = mehranova, center = "mean")
+```
+
+Im vorliegenden Beispiel ist der Levene-Test signifikant (F(7,192) = 20.563, p < .000 ), so dass von Varianzheterogenität ausgegangen werden kann. Da die Varianzen leider nicht gleich sind, ist es zu empfehlen eine Korrektur mithilfe des Welch-Tests durchzuführen.
+
+### Entscheiungsregeln
+Mit Welch-Korrektur: p < 0.05 => Ergebnis Signifikant –> Varianzen heterogen
+
+Ohne Welch-Korrektur: p > 0.05 => Ergebnis nicht Signifikant –> Varianzen homogen –> H0 mit Annahme Var1=Var2=… -> Var_n wird angenommen
+    
+# 9) Ergebnisse der mehrfaktorielle Varianzanalyse (ohne Messwiederholung)
+
+### Keine Welch-Korrektur
+
+```{r}
+mehrAnova1 <- lm(vocab ~ gender*educGroup, data = mehranova)
+myAnova <- Anova(mehrAnova1 , type = 3)
+myAnova
+```
+
+### mit Welch-Korrektur
+
+```{r}
+genderwelch <- oneway.test(vocab~gender, data = mehranova, var.equal = F)
+genderwelch
+```
+
+Für den Faktor Sportlichkeit wird ein Haupteffekt ersichtlich. Die Gesundheitsindex scheint demnach abhängig vom Sportlichkeit zu sein (F(1, 196.67) = 30.532, p = .000).
+
+```{r}
+educGroupwelch <- oneway.test(vocab~educGroup, data = mehranova, var.equal = F)
+educGroupwelch
+```
+
+Es gibt einen Haupteffekt der Ernaehrung auf die Gesundheitsindex (F(3, 99.02) = 436.71, p < .000). Die Gesundheitsindex scheint demnach abhängig von der Ernaehrung zu sein.
+
+```{r}
+AXBwelch <- oneway.test(vocab~educGroup*gender, data = mehranova, var.equal = F)
+AXBwelch
+```
+
+Der Interaktionsterm von Ernaehrung und Sportlichkeit auf die Gesundheitsindex ist signifikant (F(7, 80.776) = 1477.3, p < .000). Der Effekt von Ernaehrung hängt demnach zu einem gewissen Teil von der Sportlichkeit ab oder genauso umgekehrt.
+
+# 10) Post-Hoc
+
+Ist ein Haupteffekt oder eine Interaktion signifikant, so ist zwar bestätigt, dass ein Effekt vorliegt, doch ist nach wie vor unklar, welche Faktorstufen sich unterscheiden, sobald ein Faktor mehr als zwei Ausprägungen aufweist. (Bei zwei Ausprägungen unterscheiden sich eben diese zwei Ausprägungen voneinander, sonst wäre der F-Test nicht signifikant.) Im vorliegenden Beispiel liegen ein Effekt der Ernaehrung, sowie ein Interaktionseffekt vor. Post-hoc-Tests können einfach eingesetzt werden, um zu prüfen, welche Levels der Ernaehrung sich unterscheiden. Für die Interaktion ist dies in SPSS nicht implementiert.
+
+Wie bereits erwähnt wurde, beinhaltet der Faktor Ernaehrung vier Stufen. Aus dem signifikanten Haupteffekt lässt sich nicht ableiten, welche der Faktorstufen einen signifikant unterschiedlichen Einfluss auf die abhängige Variable (Gesundheitsindex) haben. Zu diesem Zweck werden Tukey-korrigierte Mehrfachvergleiche berechnet.
+
+Bei der Berechnung von Post-hoc-Tests wird im Prinzip für jede Kombination von zwei Mittelwerten ein t-Test durchgeführt. Im aktuellen Beispiel die Ernaehrung mit vier Gruppen, bzw. zwei Gruppen sind dies 28 Tests. Multiple Tests sind jedoch problematisch, da der Alpha-Fehler (die fälschliche Ablehnung der Nullhypothese) mit der Anzahl der Vergleiche steigt. Wird nur ein t-Test mit einem Signifikanzlevel von .05 durchgeführt, so beträgt die Wahrscheinlichkeit des Nicht-Eintreffens des Alpha-Fehlers 95%. Werden jedoch 28 solcher Paarvergleiche vorgenommen, so beträgt die Nicht-Eintreffens-Wahrscheinlichkeit des Alpha-Fehlers (.95)^28 = 0.2378. Um die Wahrscheinlichkeit des Eintreffens des Alpha-Fehlers zu bestimmen, wird 1 - 0.2378 = 0.7621 gerechnet. Die Wahrscheinlichkeit des Eintreffens des Alpha-Fehlers liegt somit bei 76.21%. Diese Fehlerwahrscheinlichkeit wird als “Familywise Error Rate” bezeichnet.
+
+Um dieses Problem zu beheben, kann zum Beispiel die Tukey-Korrektur angewendet werden. Hierbei wird α durch die Anzahl der Paarvergleiche dividiert. Im hier aufgeführten Fall ist dies .05/28 = .00178. Bei diesem Konzept handelt es sich um eine allgemeine Information.
+
+Die Tukey berücksichtigt die Korrektur, daher kann weiter gegen 0.05 getestet werden.
+
+```{r}
+PostHoc <- aov(vocab ~ gender*educGroup, data=mehranova) 
+#Alternativ auch der Name des Zwischenspeichers "mehr" - PostHoc <- aov(mehr)  
+TukeyHSD(PostHoc)
+```
+Wie vermutet, die Ernaeherung-GesundheitsindexKombinationen unterscheiden sich signifikant. Dies ist auch bei der Sportlichkeit-GesundheitsindexKombinationen ebenfalls der Fall.
+
+Für das vorliegende Beispiel wird ersichtlich, dass sich die Ernaeherung und die Sportlichkeit bezüglich der Gesundheitsindex signifikant unterscheiden (p < .05). Jedoch kann kein Unterschied:
+
+  - zwischen der Rohkost und Vegan mit einem Sportlicher (p = .999),
+  - zwischen dem Mischkost-Unsportlicher und dem vegetarisch-Sporlicher (p = .987) 
+  
+von 0.05 Prozent festgestellt werden. Es können 6 Gruppen gebildet werden.
+
+# 11) Berechnung der Effektstärke
+
+#### Eta-Quadrat
+  
+  Das partielle Eta-Quadrat (partielles η2) ist in Abbildung ausgegeben. Es ist ein Mass für die Effektgrösse: Es setzt die Variation, die durch einen Faktor erklärt wird, in Bezug mit jener Variation, die nicht durch andere Faktoren im Modell erklärt wird. Das heisst, es wird ausschliesslich jene Variation betrachtet, welche nicht durch die anderen Faktoren im Modell erklärt wird. Das partielle Eta-Quadrat zeigt, welchen Anteil davon ein Faktor erklärt:
+
+```{r}
+library(sjstats)
+
+eta <- eta_sq(mehrAnova1, partial = TRUE)
+eta
+```  
+
+Für die Sportlichkeit beträgt das partielle Eta-Quadrat .665. Das heisst, die Sportlichkeit erklärt 66.5% derjenigen Fehlervariation, die das Modell hätte, wäre die Sportlichkeit nicht im Modell. Für die Ernaeherung beträgt das partielle Eta-Quadrat .920. Das heisst, die Ernaeherung erklärt 92% derjenigen Fehlervariation, die das Modell hätte, wäre die Ernaeherung nicht im Modell. Das partielle Eta-Quadrat der Interaktion beträgt .278 und erklärt daher 27.8% der ohne die Interaktion ungeklärten Variation.     
+    
+#### Effekt stärke
+
+$$f=\sqrt\frac{\eta^{2}}{1-\eta^{2}}=\sqrt\frac{eta^{2}}{1-eta^{2}}$$
+
+Effektstärke fürs gender:
+
+```{r}
+effgender <- sqrt(eta$partial.etasq[1]/(1-eta$partial.etasq[1]))
+
+sprintf("Effektstärke fürs gender: f= %.3f", effgender)
+```
+
+Effektstärke fürs educGroup:
+
+```{r}
+effeduc <- sqrt(eta$partial.etasq[2]/(1-eta$partial.etasq[2]))
+
+sprintf("Effektstärke fürs educGroup: f= %.3f",effeduc)
+```
+
+
+Effektstärke für die Interaktion:
+
+```{r}
+
+effAxB <- sqrt(eta$partial.etasq[3]/(1-eta$partial.etasq[3]))
+
+sprintf("Effektstärke für die Interaktion: f= %.3f",effAxB)
+```
+
+Um zu beurteilen, wie gross dieser Effekt ist, kann man sich an der Einteilung von Cohen (1988) orientieren:
+
+f = .10 entspricht einem schwachen Effekt
+f = .25 entspricht einem mittleren Effekt
+f = .40 entspricht einem starken Effekt
+
+Damit entsprechen die Effektstärken von 1.408, 3.388 und 0.621 einem starken Effekt.
+
+# 12) Eine Aussage
+
+Es zeigt sich, dass es einen Unterschied zwichen der Sportlichkeit und der Gesundheitsindex allein gibt ((F(1, 196.67) = 30.532, p = .000)). H0 für den Haupteffekt A wird verworfen und H1 angenommen. 
+
+Je nach Ernaehrung gibt es einen Unterschied zwischen den Gesundheitsindexen (F(3, 99.02) = 436.71, p < .000). H0 für den Haupteffekt B wird verworfen und H1 angenommen. 
+
+Der Interaktionsterm von Ernaehrung und Sportlichkeit auf die Gesundheitsindex ist unterschiedlich (F(7, 80.776) = 1477.3, p < .000). Der Effekt von Ernaehrung hängt demnach zu einem gewissen Teil von der Sportlichkeit ab. H0 für den Interaktion AxB wird verworfen, H1 angenommen.
+
+Der PostHoc wurde mit Tukey durchgeführt. Es zeigt, dass sich alle Gruppen für Ernaehrung signifikant unterscheiden: Vegan (M = 20.10, SD = 13.96, N=50), Rohkost (M = 27.56, SD = 11.44, N=50), vegetarisch (M = 61.36, SD = 18.34, N=50) und Mischkost (M = 78.84, SD = 5.78, N=50). Zudem zeigt sich eine signifikante Interaktion von Ernaehrung und Sportlichkeit auf die Gesundheitsindex. Dies weist darauf hin, dass sich Ernaehrung je nach Sportlichkeit unterschiedlich auswirkt. Darüber hinaus lag Vegetarisch Sportlicher (M = 76.32, SD = 12.18) über Mischkost Unsportlicher (M = 74.52, SD = 3.50), allerdings konnte der Unterschied im Post-Hoc nicht bestätigt werden (p = .987). Nach PostHoc unterscheiden sich auch alle Gruppen für Sportlichkeit signifikant: Sportlich (M = 56.98, SD = 24.56, N=100), Unsportlich(M = 36.95, SD = 31.0, N=100). Bei Sportlicher lag Rohkost (M = 34.72, SD = 20.40) über Vegan (M = 33.72, SD = 6.48), allerdings konnte der Unterschied im Post-Hoc nicht bestätigt werden (p = .999). Die unsportliche Menschen, die sich vegetarisch oder Mischkost ernähren, sind gesunder als die sportliche Menschen, die sich vegan und Rohkost ernähren und der Mittelwertsunterschied bei diesen Gruppen konnte bestätigt werden.
+
+Die Effektstärken sind für den Haupteffekt der Ernaehrung (f = 3.388), der Sportlichkeit (f = 1.408) und der Interaktion (f = 0.621) nach Cohen (1988) ein starker Effekt.
+
+

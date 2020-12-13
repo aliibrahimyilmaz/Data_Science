@@ -1,0 +1,117 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+data <- data.frame(
+  name=c( rep("braunhaarig",15),  
+          rep("blond",5),
+          rep("rothaarig",10),
+          rep("schwarzhaarig",12),
+          rep("bunthaarig",4))
+  )
+# head(data)
+
+
+
+mytable <- table(data$name)
+# mytable
+
+
+
+pie (mytable) # einfaches Kreisdiagramm
+
+```
+
+
+
+
+```{r}
+#
+# BASE Funktion
+#
+
+#data <- data.frame(
+  # name=c( rep("braunhaarig",15),  
+          #rep("blond",5),
+          #rep("rothaarig",10),
+          #rep("schwarzhaarig",12),
+          #rep("bunthaarig",4))
+ # )
+
+#mytable <- table(data$name)
+
+data2 <- data.frame(
+  name=c("braun", "blond", "rothaarig","scharzhaarig","bunthaarig"),
+  value=c(15, 5, 10, 12, 4))
+data2 <- data2[order(data2$value, decreasing = TRUE), ]
+
+
+
+# myClr <- c("gold", "brown","green","red", "black") #Farbe
+myClr <- c("steelblue4", "steelblue", "steelblue3", "steelblue2", "steelblue1") #Farbe
+
+lbls <- paste(names(mytable),#Beschriftung
+              "\n", #Zeilenumbruch
+              mytable, sep="") #Anzahl der Ausprägungen
+
+lbls <- paste(data2$name,"",data2$value)
+
+
+pie( # Erstelle ein Kreisdiagramm
+  
+    #mytable, #Daten
+    data2$value,
+    labels = lbls,#Bezeichnung
+    # col = myClr, #Farbe
+    col = rainbow(5), # Regenbogenfarbe in den Klammern die Anzahl der Farben
+    radius = 0.75, # Groesse des gesamten Kuchens 
+    clockwise = TRUE, # TRUE im Uhrzeigersinn, FALSE entgegen des Uhrzeigersinns
+    init.angle = 90, # 0 startet bei 03.00h, 90 startet bei 12.00h, 180 bei 09.00h
+    density = NULL, # Transparenz z.B. bei 70
+    edges = 100, # Kreis wird polygon-artig z.B. bei 25
+    main="Kreidiagramm\n Haarfarben"
+    ) 
+
+legend("topright", data2$name, cex=0.8,fill=rainbow(length(data2$value)))
+# legend("topright", names(mytable), cex=0.8,fill=rainbow(length(mytable)))
+# cex bestimmt die Groesse der Legende
+# topright, topleft, bottomright, bottomleft, bottom
+
+```
+
+
+
+
+
+```{r}
+slices <- c(10, 10,10, 10, 10, 10, 10) # 7 gleichgrosse Kuchenstuecke obwohl nur 5 Laender
+lbls <- c("US", "UK", "Australia", "Germany", "France")
+pie(slices, labels = lbls, main="Pie Chart of Countries")
+
+```
+
+
+
+
+
+
+```{r}
+slices <- c(10, 12, 4, 16, 8)
+lbls <- c("USA", "UK", "China", "Indien", "Europa")
+
+pct <- round(slices/sum(slices)*100)
+
+lbls <- paste(lbls, pct) # add percents to labels
+
+lbls <- paste(lbls,"%",sep="") # add % to labels
+
+pie(slices,labels = lbls, col=rainbow(length(lbls)),
+   main="Regenhäufigkeit im Jahr 2019")
+```
+
+
+
+
+
+

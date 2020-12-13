@@ -1,0 +1,191 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# Kruskal-Wallis-Test: die Alternative zur Varianzanalyse
+
+### Einführung
+
+Der Kruskal-Wallis-Test – auch "H-Test" genannt – für unabhängige Stichproben testet, ob sich die zentralen Tendenzen mehrerer unabhängiger Stichproben unterscheiden. Der Kruskal-Wallis-Test wird verwendet, wenn die Voraussetzungen für eine Varianzanalyse nicht erfüllt sind.
+
+Der Kruskal-Wallis-Test ist das nichtparametrische Äquivalent der einfaktoriellen Varianzanalyse und wird angewendet, wenn die Voraussetzungen für ein parametrisches Verfahren nicht erfüllt sind. Nicht-parametrische Verfahren sind auch bekannt als "voraussetzungsfreie Verfahren", weil sie geringere Anforderungen an die Verteilung der Messwerte in der Grundgesamtheit stellen. So müssen die Daten nicht normalverteilt sein und die Variablen müssen lediglich ordinalskaliert sein. Auch bei kleinen Stichproben und Ausreissern kann ein Kruskal-Wallis-Test berechnet werden.
+
+Die Fragestellung des Kruskal-Wallis-Tests wird oft so verkürzt:
+"Unterscheiden sich die zentralen Tendenzen mehrerer unabhängiger Stichproben?"
+
+### Fragestellungen
+
+Gibt es einen Unterschied zwischen Studiengängen (Wirtschaftswissenschaften/ Sozialwissenschaften/ Ingenieurwesen) und ihren Nettoeinkommen?
+Unterscheiden sich vier Altersgruppen bezüglich ihrer kognitiven Verarbeitungsgeschwindigkeit?
+Zeigen Kinder, die unter der Woche nicht Fernsehen dürfen, bessere Werte in einem Aufmerksamkeitstest, als solche, die einmal wöchentlich oder die mehr als einmal wöchentlich Fernsehen dürfen?
+Unterscheiden sich Personen mit hohen, mittleren und tiefen Werten auf einer Angstskala bezüglich ihrer Risikobereitschaft?
+
+### Voraussetzungen des Kruskal-Wallis-Tests
+
+✓	Die abhängige Variable ist mindestens ordinalskaliert
+✓	Es liegt eine unabhängige Variable vor, mittels der die zu vergleichenden Gruppen gebildet werden
+
+# Beispiel einer Studie
+
+Eine ärztliche Untersuchung hat gezeigt, dass Menschen im Alter eine reduzierte Sportlichkeit aufweisen. Ein Klinik möchte daher ein neues Training auf den Markt bringen und untersucht diese Tatsache.
+
+Der zu analysierende Datensatz enthält neben einer Probandennummer (ID) die Altersgruppen (Altergruppe) sowie die Sportlichkeit gemessen auf dem Laufbahn (Sportlichkeit).
+
+```{r}
+library(readxl)
+wallis <- read_excel("wallis.xlsx")
+wallis
+```
+
+# Berechnung der Teststatistik
+
+Der Kruskal-Wallis-Test basiert auf der Idee der Rangierung der Daten. Das heisst, es wird nicht mit den Messwerten selbst gerechnet, sondern diese werden durch Ränge ersetzt, mit welchen der eigentliche Test durchgeführt wird. Damit beruht die Berechnung des Tests ausschliesslich auf der Ordnung der Daten (grösser als, kleiner als). Die absoluten Abstände zwischen den Werten werden nicht berücksichtigt.
+
+Hierbei werden die Messwerte mit Rängen versehen. Als erstes werden die einzelnen Messwerte ihrer Gröse nach aufgereiht. Dies geschieht unabhängig von der Gruppenzugehörigkeit (Spalte “Gruppe”). Danach werden die Messwerte rangiert und getrennt für jede Gruppe benannt.
+
+Diese Ränge sind in Abbildung in den Spalten “Ränge ‘0-30’” bis 56+’" enthalten. Kommt ein Messwert mehrfach vor (engl. “ties”), so werden sogenannte “verbundene Ränge” gebildet.
+
+Wenn Rang 1 und 2 beide die gleichen Messwerte aufweisen, wird aus diesen beiden der Mittelwert gebildet ((1 + 2)/2 = 1.5) und die Ränge 1 und 2 werden neu beide mit dem Rang 1.5 versehen. Dies ist im vorliegenden Beispiel für die Ränge 12 und 13 (mittlerer Rang: (12+13)/2 = 12.5), sowie 14 bis 16 der Fall (mittlerer Rang: (14+15+16)/3 = 15).
+
+Schliesslich werden aus diesen ermittelten Rängen sogenannte Rangsummen gebildet (“Summen”). Hierfür werden lediglich die Ränge der jeweiligen Gruppe aufsummiert. Dies ergibt eine Rangsumme von 237.5 für die Gruppe 0-30 (n = 10), 124 für die Gruppe “31-55” (n = 8) und 73.5 für die Gruppe “56+” (n = 11). Zur Berechnung der Teststatistik H werden diese Rangsummen verwendet.
+
+# Hypothese
+
+H0: Es gibt keinen Unterschied zwischen Altersgruppe(0-30/31-55/56+) und der Sportlichkeit gemessen auf dem Laufband in Minuten.
+
+H1: Es gibt einen Unterschied zwischen Altersgruppe(0-30/31-55/56+) und der Sportlichkeit gemessen auf dem Laufband in Minuten.
+
+# Voraussetzungen für den Kruskal-Wallis-Test
+
+Die abhängige Variable ist mindestens ordinalskaliert -> ist gegeben
+
+Es liegt eine unabhängige Variable vor, mittels der die zu vergleichenden Gruppen gebildet werden. -> Die Altergruppen sind unabhängig.
+
+# Deskriptive Statistiken
+
+```{r}
+library(dplyr)
+
+wallis %>%
+group_by(Altersgruppe) %>%
+  summarize(Anzahl = n(),  Median = median(Sportlichkeit)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+
+
+Die Mediane der Gruppen unterscheiden sich. Die Gruppe “0-30” scheint am sportlichsten zu sein mit einem Wert von 13.5 min (N=10). Die Gruppe “31-55” schaffen 9.2 Min.(N=8) auf dem Laufbahn und am wenigsten sportlich ist die Gruppe der “56+” mit einem Median von 3 (N=11).
+
+# Boxplots
+
+```{r}
+boxplot(wallis$Sportlichkeit ~ wallis$Altersgruppe, main = "Boxplots Altersgruppen-Sportlichkeit  ", ylab = "Sportlichkeit gemessen auf dem Laufbahn in Minuten", xlab= "Altergruppe" , col = c("lightgreen", "deepskyblue","tomato"))
+```
+
+Die Mediane der Gruppen unterscheiden sich. Es gibt augenscheinlich keine Ausreisser.
+
+### ALTERNATIV
+
+```{r}
+library(ggplot2)
+ggplot(wallis, aes(x=Altersgruppe, y=Sportlichkeit, color=Altersgruppe)) + 
+geom_violin() + 
+geom_boxplot(width=0.2) +
+labs(x= "Altersgruppe", y = "Sportlichkeit", title="Boxplots zwischen Altersgruppen" )
+```
+
+# Ergebnisse der Kruskal-Wallis-Test
+
+```{r}
+test <- kruskal.test(Sportlichkeit ~ Altersgruppe, data=wallis)
+test
+```
+
+Die Tabelle zeigt Unterschiede. Für das Beispiel wird eine Signifikanz von .000 ausgegeben. Also kann davon ausgegangen werden, dass es Unterschiede bezüglich der zentralen Tendenzen der Gruppen gibt (Chi-Quadrat(2) = 21.22,p = .000). Allerdings lässt sich aufgrund dieses Tests nicht bestimmen, welche der drei Gruppen sich signifikant voneinander unterscheiden. Es ist denkbar, dass sich lediglich ein Paar signifikant unterscheidet und zwischen den übrigen keine signifikanten Unterschiede vorliegen. Daher wird ein Post-hoc-Test durchgeführt.
+
+
+```{r}
+PostHoc <- aov(Sportlichkeit ~ Altersgruppe, data=wallis)
+TukeyHSD(PostHoc)
+```
+
+Der Post-Hoc-Test ergibt, dass sich alle vergleichenden Gruppen signifikant unterscheiden (p < 0.05).
+
+Es gibt einem signifikanten Unterschied zwischen den drei getesteten Gruppen, das heisst, dass jede Altersgruppe einen deutlichen Unterschied in der Sportlichkeit aufweist.
+
+Es können drei unabhängige Gruppen gebildet werden. Eine Generalisierung ist möglich.
+
+# Berechnung der Effektstärke
+
+Variante 1:
+
+$$r=\left\| \frac{z}{\sqrt{n}} \right\|$$
+mit:
+
+z= z-transformiertes p des Chi-Quadrat-Tests nach Kruskal-Wallis.
+
+n= Größe der Gesamtstichprobe
+
+```{r}
+Zstat<-qnorm(test$p.value/2) #ungerichtet 
+
+sprintf("Z-Wert für den H-Test : %.2f", Zstat)
+```
+
+
+```{r}
+daten <- nrow(wallis)
+sprintf("Anzahl der Daten: %.f", daten)
+```
+
+```{r}
+eff <- abs(Zstat/sqrt(daten))
+sprintf("Effektstärke: %.2f", eff)
+```
+
+Zur Beurteilung der Groesse des Effektes dient die Einteilung von Cohen (1992):
+
+$$\begin{align}
+\text{Schwacher Effekt: } 0.10 &< ||r|| < 0.30             \\
+\text{Schwacher bis mittlerer Effekt: } 0.30 &= ||r||      \\
+\text{Mittlerer Effekt: } 0.30 &< ||r|| < 0.50             \\
+\text{Mittlerer bis starker Effekt: }0.50 &= ||r||         \\
+\text{Starker Effekt: } 0.50 &< ||r||        
+\end{align}$$
+
+Damit entspricht eine Effektstärke von 0.78 einem starken Effekt.
+
+Variante 2:
+
+$$w = \left|\sqrt\frac{\mathcal{X}^2}{n}\right|$$
+```{r}
+anzahl <- nrow(wallis)
+chi <- test$statistic
+
+w<- sqrt(chi /anzahl)
+ sprintf("Effektstärke: %.2f",w)
+```
+
+$$\begin{align}
+\text{Schwacher Effekt: } 0.10 &< w \le 0.30             \\
+\text{Mittlerer Effekt: } 0.30 &< w \le 0.50             \\
+\text{Starker Effekt: } 0.50 &< w        
+\end{align}$$
+
+Damit entspricht eine Effektstärke von 0.85 einem starken Effekt.
+
+# Eine Aussage
+
+Der Kruskal-Wallis-Test bestätigt, dass die Sportlichkeit sich durch die Altersgruppe unterscheidet (Chi-Quadrat(2) = 21.22, p = .000).
+
+Der anschliessend durchgeführte Post-hoc-Test (Tukey) zeigt, dass alle Gruppen “0-30” (Median = 13.5, n = 10)und “31-55” (Median = 9.2, n = 8), sowie “56+” (Median = 3.0, n = 9) signifikant unterscheiden (p < .05).
+
+Die Effektstärke (w = .85) zeigt ein starken Effekt, sodass tatsächlich die Altersgruppe einen grossen Effekt auf die Ausdauer, gemessen in Minuten auf dem Laufband, hat.
+
+H0 wird ablehnen.
+
+
+
+
+
+
+

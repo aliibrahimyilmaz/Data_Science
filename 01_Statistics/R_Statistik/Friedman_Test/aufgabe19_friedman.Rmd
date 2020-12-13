@@ -1,0 +1,171 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Aufgabe 19: Friedman (Die Alternative zu ANOVA mit Messwiederholung)
+
+In einer Studie zu Aggressivität in Kinderkrippen werden Mütter, Väter und Krippenpersonal zum Verhalten der Kinder befragt. Unterscheiden sich die Beurteilungen?
+
+Daten
+Variable1: Betreuer
+Varibale2: Aggressivität
+
+# Aufgabenstellung
+
+# 1. Hypothese
+
+H1: Es gibt einen Unterschied zwischen der Beurteilung der Aggressivität der Kinder zwischen den befragten Personen.
+
+H0: Es gibt einen Unterschied zwischen der Beurteilung der Aggressivität der Kinder zwischen den befragten Personen.
+
+
+# 2. Voraussetzungen des Friedman-Tests
+
+Die abhängige Variable ist mindestens ordinalskaliert-> Aggressivität ist intervalskalliert (metrisch).
+
+Es liegen verbundene Stichproben vor, aber die verbundenen “Gruppen” von Messwerten sind unabhängig voneinander (z.B. die verschiedenen Mutter-Vater-Kind-Triaden sind voneinander unabhängig) -> Mütter, Väter und Krippenpersonal Gruppe sind voneinander unabhängig und verbundenen über das Kind.
+
+# 3. Grundlegende Konzepte
+
+Der Friedman-Test ist das nichtparametrische Äquivalent der einfaktoriellen Varianzanalyse mit Messwiederholung und wird angewendet, wenn die Voraussetzungen für ein parametrisches Verfahren nicht erfüllt sind.
+
+Nicht-parametrische Verfahren sind auch bekannt als "voraussetzungsfreie Verfahren", weil sie geringere Anforderungen an die Verteilung der Messwerte in der Grundgesamtheit stellen. So müssen die Daten nicht normalverteilt sein und die Variablen müssen lediglich ordinalskaliert sein. Auch bei kleinen Stichproben und Ausreissern kann ein Friedman-Test berechnet werden.
+
++ Messwiederholung
++ Natürliche Paare
++ Matching
+
++ Fehlende Normalverteilung
++ Ordinalskalierte AV
++ Aussreißer
++ kleine Stichprobe
+
+Die Fragestellung des Friedman-Tests wird oft so verkürzt: "Unterscheiden sich die zentralen Tendenzen einer Variable zwischen mehreren abhängigen Gruppen, respektive Messzeitpunkten?"
+
+Hnweise: Die Datenansicht muss verändert werden.
+
+```{r}
+library(readxl)
+friedman <- read_excel("friedman.xlsx")
+friedman
+```
+```{r}
+library(reshape2) -> Anpassung 
+friedman <- melt(friedman, id.vars = c("ID"),
+                 measure.vars = c("Mutter", "Vater", "Krippenpersonal"),
+                 variable.name = "Betreuer",
+                 value.name = "Aggression")
+friedman
+```
+
+# 4. Boxplot:
+
+```{r}
+boxplot(friedman$Aggression ~  friedman$Betreuer, main = "Boxplot", col = c("hotpink3","tomato", "orange"), xlab = "Beurteilung der Aggressivität des Kindes ", ylab = "Aggressivität")
+```
+Es gibt keine Ausreißer. Es liegt eine deutliche Überschneidung der Bereiche der Eltern vor. 
+
+# 5. Deskriptive Statistik
+
+### Variante 1
+
+```{r}
+library(dplyr) #-> Deskriptive Statistik
+friedman %>%
+  group_by(Betreuer) %>%
+  summarize(Anzahl = n(),  Median = median(Aggression)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+
+Die Mediane unterscheiden sich. Allerdings ist der Unterschied bei den Eltern nur sehr gering. Der Unterschied zwischen Eltern (Median_Mutter = 32.5, Median_Vater = 35, n = 12 ) und Kitapersonal ist deutlicher (Median = 66, n=12). 
+
+###  Variante 2:
+
+```{r}
+library(psych) # -> Alternative für die deskriptive Statistik
+describeBy(friedman$Aggression, group=friedman$Betreuer, mat=TRUE)
+```
+
+# 6. Ergebnisse des Friedman-Test
+
+```{r}
+fried <- friedman.test(Aggression ~ Betreuer |ID,  data = friedman)
+
+fried
+```
+
+Wie Abbildung entnommen werden kann, unterscheiden sich die Beurteilung der Aggressivität durch die Betreuer signifikant (Chi-Quadrat(2) = 12.809, p = .0016 , n = 12).
+
+
+Allerdings lässt sich aufgrund dieses Tests nicht bestimmen, welche der drei Personengruppen sich signifikant voneinander unterscheiden. Es ist denkbar, dass sich lediglich ein Paar signifikant unterscheidet und zwischen den übrigen keine signifikanten Unterschiede vorliegen. Daher wird ein Post-hoc-Test durchgeführt.
+
+# 7.	Post-Hoc Test
+
+Obwohl der Friedman-Test zeigt, dass ein Unterschied besteht, muss anhand von Post-hoc-Tests geklärt werden, zwischen welchen Personen signifikante Unterschiede bezüglich der Beurteilungen bestehen.
+
+Bei der Berechnung von Post-hoc-Tests wird im Prinzip für jede Kombination von zwei Paarvergleiche durchgeführt.
+
+$$\frac{k*(k-1)}{2}=\frac{3*(3-1)}{2}= \frac{6}{2} =3$$
+
+Im aktuellen Beispiel mit drei Gruppen sind dies 3 Tests. Multiple Tests sind jedoch problematisch, da der Alpha-Fehler (die fälschliche Ablehnung der Nullhypothese) mit der Anzahl der Vergleiche steigt. Wird nur ein t-Test mit einem Signifikanzlevel von .05 durchgeführt, so beträgt die Wahrscheinlichkeit des Nicht-Eintreffens des Alpha-Fehlers 95%. Werden jedoch zehn solcher Paarvergleiche vorgenommen, so beträgt die Nicht-Eintreffens-Wahrscheinlichkeit des Alpha-Fehlers (.95)^3 = .8573. Um die Wahrscheinlichkeit des Eintreffens des Alpha-Fehlers zu bestimmen, wird 1 - .8573 = .1426 gerechnet. Die Wahrscheinlichkeit des Eintreffens des Alpha-Fehlers liegt somit bei 14.26%. Diese Fehlerwahrscheinlichkeit wird als “Familywise Error Rate” bezeichnet.
+
+Hierbei wird α durch die Anzahl der Paarvergleiche dividiert. Im hier aufgeführten Fall ist dies .05/3 = .01666.
+
+### Variant 1:
+
+```{r}
+pairwise.t.test(friedman$Aggression,
+                friedman$Betreuer, 
+                p.adjust.method = "none", 
+                paired = TRUE, 
+                data = friedman)
+```
+
+
+Es zeigt sich, dass ein sig. Unterschied zwischen Krippenpersonal und Müttern (p=0.00031), sowie Krippenpersonal und Vätern (p = 0.00075) besteht. 
+Zwischen Eltern gibt es keinen Unterschied (p= 0.21406). Es ist sinnvoll zwei Gruppen zu bilden: "Eltern" und "Krippenpersonal". 
+
+### Variant 2 (Bonferenini Korrektur):
+
+In dem foldenden Test wird der p-value mit "bonf" angepasst, daher wird auf 0.05 getestet. 
+
+```{r}
+pairwise.t.test(friedman$Aggression,
+                friedman$Betreuer, 
+                p.adjust.method = "bonf", 
+                paired = TRUE, 
+                data = friedman)
+```
+
+Der P-Wert muss kleiner als 0.05 sein, dann ist ein Ergebnis signifikant. (p < 0.05) mit bonferenini.
+Das p-value muss nicht angepasst werden. Es zeigt sich, dass ein sig. Unterschied zwischen Krippenpersonal und Mütern (p=0.00093), sowie Krippenpersonal und Vätern (p = 0.00225) besteht. 
+Zwischen Eltern gibt es keinen Unterschied (p= 0.64218). Es ist sinnvoll zwei Gruppen zu bilden: "Eltern" und "Krippenpersonal". 
+
+Nur 2 Gruppe sind generaliesibar. 
+
+# 8.	Berechnung der Effektstärke
+
+$$w =\sqrt\frac{X^2} {n}$$
+
+```{r}
+w = sqrt(fried$statistic/12)
+sprintf("Effektstärke: %f2", w)
+```
+Zur Beurteilung der Grösse des Effektes dient die Einteilung:
+
+w = .10 entspricht einem schwachen Effekt
+w = .30 entspricht einem mittleren Effekt
+w = .50 entspricht einem starken Effekt
+
+Damit entspricht die Effektstärke von 1.033 einem starken Effekt.
+
+# 9.	Eine Aussage
+
+Die Beurteilung des Verhalten eines Kindes unterscheidet sich sig. zwischen den Eltern und Krippenpersonal  (Friedman-Test: ((Chi-Quadrat(2) = 12.809, p = .0016 , n = 12)).
+
+Der Post-Hoc-Test zeigt, dass zwei Gruppen sich signifikant unterscheiden (p < 0.016). Es zeigt sich, dass ein signifikanter Unterschied zwischen Krippenpersonal und Mütern (p=p=0.00031), sowie Krippenpersonal und Vätern (p = 0.00075) besteht. 
+Zwischen Eltern gibt es keinen Unterschied (p= 0.214). Es ist sinnvoll zwei Gruppen zu bilden: "Eltern" und "Krippenpersonal". 
+
+Darüber hinaus ist der Effekt auch noch stark (w = 1.033). H0 wird abgelehnt, H1 angenommen.
+

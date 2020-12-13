@@ -1,0 +1,97 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+### Defintion/ Beschreibung 
+
+
+
+### Vorausetzung 
+
+
+
+### Gestaltung 
+
+
+### Code 
+
+
+#### Base
+ 
+ 
+#### ggplot
+
+
+```{r}
+
+BIP <- data.frame(
+ name <- c("Nordrhein-Westfalen",
+           "Bayern",
+           "Baden-Württemberg",
+           "Niedersachsen",
+           "Hessen",
+           "Berlin",
+           "Rheinland-Pfalz",
+           "Rest"),
+ zahl <- c(711.419,632.897,524.325,307.036,294.477,153.291,145.003,667.313)
+    )
+
+# BIP$name<-factor(BIP$name, levels=c("Nordrhein-Westfalen", "Bayern", "Baden-Württemberg","Niedersachsen","Hessen", "Berlin", "Rheinland-Pfalz", "Rest")) 
+  BIP$name<-factor(BIP$name, levels=c("Rest","Rheinland-Pfalz", "Berlin","Hessen","Niedersachsen","Baden-Württemberg","Bayern","Nordrhein-Westfalen")) 
+library(ggplot2)
+library(dplyr)
+
+  #BIP %>% 
+   # mutate(name = factor(name, 
+    #       levels = c("Nordrhein-Westfalen",
+     #      "Bayern",
+      #     "Baden-Württemberg",
+        #   "Niedersachsen",
+         #  "Hessen",
+          # "Berlin",
+          # "Rheinland-Pfalz",
+           #"Rest"))) %>%   
+  
+
+ggplot(BIP, aes (x="", y = zahl, fill = factor(name))) + #Daten  einlesen
+  geom_bar(width = 1, stat = "identity", color="white") + #immer so 
+    coord_polar("y", start=0)+ # Kreisdiagramm
+  geom_text(aes(label = paste(round(zahl / sum(zahl) * 100, 1), "%")), #Berechnung der Prozente
+          position = position_stack(vjust = 0.5)) + #Position mittig
+  
+  theme_void() + # remove background, grid, numeric labels
+  
+  labs(fill = "Top BIP Deutschland", #Legende 
+       title = "Prozentualer Anteil an der Wirtschaftsleistung in Deutschland") + # Titel des Kreisdiagramms
+  scale_fill_brewer(palette="Set5")
+
+```
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# Create Data
+data <- data.frame(
+  group=LETTERS[1:5],
+  value=c(13,7,9,21,2)
+)
+
+# Compute the position of labels
+data <- data %>% 
+  arrange(desc(group)) %>%
+  mutate(prop = value / sum(data$value) *100) %>%
+  mutate(ypos = cumsum(prop)- 0.5*prop )
+
+# Basic piechart
+ggplot(data, aes(x="", y=prop, fill=group)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  theme_void() + 
+  
+  geom_text(aes(y = ypos, label = group), color = "black", size=6) +
+  scale_fill_brewer(palette="Set5")
+```
+

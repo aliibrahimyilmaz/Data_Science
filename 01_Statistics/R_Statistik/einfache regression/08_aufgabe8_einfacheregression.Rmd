@@ -1,0 +1,180 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# Aufgabenstellung: Einfache Regressionsanalyse
+
+Viele Menschen behaupten, dass bei ihnen erst der erste Schneefall Weihnachtsgefühle weckt. Eine Forschungsgruppe möchte untersuchen, ob Schneefall tatsächlich die Weihnachtsstimmung steigert. Eine bereits veröffentlichte Studie konnte zeigen, dass die Weihnachtsstimmung durch die Anzahl gekaufter Weihnachtsdekorationsartikel operationalisiert werden kann. Die Forschungsgruppe formuliert nun die folgende Forschungsfrage: Besteht ein Zusammenhang zwischen der Anzahl schneefallreicher Tage in der Vorweihnachtszeit und dem Umsatz (in Tausend Schweizer Franken) in Dekorationsgeschäften (n = 212)? Der zu analysierende Datensatz enthält daher neben einer Identifikationsnummer des Dekorationsgeschäfts (id) eine Variable, die den Umsatz erfasst (deko), und eine, die die Anzahl Tage mit Schneefall wiedergibt (schnee).
+
+Variable1 (AV): deko
+Varibale2 (UV): schnee
+
+## 1) Hypothese: 
+
+ungerichtete Zusammenhangshypothese:
+
+H1: Es gibt einen Zusammenhang zwischen der Anzahl schneefallreicher Tage in der Vorweihnachtszeit und dem Umsatz (in Tausend Schweizer Franken) in Dekorationsgeschäften.
+
+H0: Es gibt keinen Zusammenhang zwischen der Anzahl schneefallreicher Tage in der Vorweihnachtszeit und dem Umsatz (in Tausend Schweizer Franken) in Dekorationsgeschäften.
+
+## 2) Voraussetzungen der einfachen Regressionsanalyse:
+
+Die abhängige und die unabhängige Variable sind intervallskaliert. UV schnee ist metrisch und die AV deko ist ebenfalls metrisch.
+
+Linearität des Zusammenhangs: Es wird ein linearer Zusammenhang zwischen der abhängigen und der unabhängigen Variablen modelliert. <-siehe Scatterplot und Pearson
+
+Unabhängigkeit des Fehlerwerts: Die Fehlerwerte hängen nicht voneinander ab. <- siehe Homoskedastizität
+
+Normalverteilung des Fehlerwerts: Die Fehlerwerte sind näherungsweise normalverteilt. <- siehe Histogramm
+
+## 3) Grundlegende Konzepte: Was ist einfache Regression?:
+
+Die einfache Regressionsanalyse oder bivariate Regression wird angewendet, wenn geprüft werden soll, ob ein Zusammenhang zwischen zwei intervallskalierten Variablen besteht. Ziel ist das Zurückgehen von der abhängigen Variable y auf die unabhängige Variable x.Die abhängige Variable wird auch als "Kritieriumsvariable" und die unabhängige Variable als "Prädiktorvariable" bezeichnet.
+
+Es könne drei Arten von Fragestellungen untersucht werden:
+
+Ursachenanalyse: Gibt es einen Zusammenhang zwischen der unabhängigen und der abhängigen Variable? Wie eng ist dieser?
+Wirkungsanalyse: Wie verändert sich die abhängige Variable bei einer Änderung der unabhängigen Variablen?
+Prognose: Können die Messwerte der abhängigen Variable durch die Werte der unabhängigen Variable vorhergesagt werden?
+
+Kurz um: "Wie beeinflusst eine unabhängige Variablen die abhängige Variable?"
+
+## 4) Prüfen der Voraussetzungen:
+
+```{r}
+library(readr)
+regression <- read_csv("uebung8.csv")
+regression
+```
+```{r}
+boxplot(regression$schnee, main="Boxplot zur Schnee", xlab="Schnee Tage", ylab="Anzahl")
+```
+Es liegen keine Ausreißer in der Einzelbetrachtung vor.
+
+```{r}
+umsatz <- boxplot(regression$deko, main="Boxplot zur Deko-Umsatz", xlab="Deko-Umsatz", ylab="Umsatz in Tausend Schweizer Franken")
+```
+Es gibt einige Ausreißer. Grundsätzlich ist das für diese Auswertung eher kein Problem, da der Datensatz relativ groß ist.
+```{r}
+View(regression)
+```
+
+### Ausreißer finden und löschen:
+```{r}
+ausreisser <- umsatz$out
+ausreisser
+```
+
+### Descriptive Statistik:
+
+Für die deskriptive Statistik empfiehlt es sich das Package “psych” zu verwenden.
+
+```{r}
+library(psych)
+describe(regression)
+```
+Die Schneetage liegt bei 15.08 (SD=1.53, n= 212). Die Deko-Umsatz legt bei 7.39 Tausend Schweizer Franken (SD= 4.30, n= 212). Es zeigt sich, dass Die Deko-Umsatz nach oben verschoben ist (Median=6.25 Tausend Schweizer Franken).
+
+### Scatterplot und Pearson:
+
+Es gilt anzumerken, dass auch nicht-lineare Zusammenhänge zwischen y und x mittels Regressionsanalyse untersucht werden können. Dazu wird der Zusammenhang vor der Regressionsanalyse derart transformiert, dass er linear wird. Dies geschieht durch eine Transformation von y und/oder x. Anschliessend wird nicht der Zusammenhang zwischen y und x modelliert, sondern zwischen den allenfalls transformierten Variablen.
+
+```{r}
+plot( regression$deko ~ regression$schnee, main= "Streudiagramm Schnee Tage und Deko-Umsatz", xlab = "Schnee Tage" , ylab="Deko-Umsatz (in Thausend Schweizer )")
+abline(lm(deko ~ schnee, data = regression), col="tomato")
+```
+Das Streudiagramm lässt für das Beispiel einen positiven Zusammenhang vermuten. Damit scheint die Voraussetzung, dass der Zusammenhang an sich linear ist, erfüllt.
+
+```{r}
+test <- cor.test(regression$schnee, regression$deko)
+test
+```
+
+Der R-Output in Abbildung gibt den Korrelationskoeffizienten sowie den p-Wert (Signifikanz) und die Stichprobengrösse n wieder. Es wird ersichtlich, dass ein Zusammenhang vorliegt zwischen Schneetage und Dekoumsaetzen (r = 0.3800428 , p= .000, n = 212). Da r einen positiven Wert aufweist, kann von einem positiven, linearen und signifikanten Zusammenhang zwischen Schneetage und Dekoumsaetzen ausgegangen werden.
+
+Da der Korrelation mittelstark und signifikant ist, ist es sinnvoll eine Regression durchzuführen zur Prüfung der Kausalität.
+
+
+### Homoskedastizität:
+
+```{r}
+regression1 <-  lm(regression$deko ~ regression$schnee)
+
+zpred <- scale(fitted(regression1), center = T, scale = T)
+sres <-rstandard(regression1)
+
+plot (x=zpred, y=sres, main = "Streudiagramm der Residuen", 
+      xlab ="Regression: Standardisierter geschätzter Wert", 
+      ylab = "Regression: Standardisiertes Residuum",
+      col = "darkblue")
+
+abline (a=0, b=0)
+```
+Bei der optischen Prüfung der Daten prüfen wir auf Homoskedastizität. Unsere Daten lassen auf Homoskedastizität schließen. Das wäre nicht der Fall, wenn die Daten eher Trompetenform sich darstellen. Gerne kann hier großzügig gearbeitet werden.
+
+### Histogramme:
+
+```{r}
+hist (sres, freq = T, breaks = 10, main ="Verteilung des Fehlerwerts", xlab= "Regression: Standardisiertes Residuum", ylab="Häufigkeiten", xlim = c(-2,4),ylim = c(0,70), col = "lightblue" )
+```
+
+Zur Überprüfung, ob das Regressionsmodell insgesamt signifikant ist, wird ein F-Test durchgeführt. Dieser prüft, ob die Vorhersage der abhängigen Variablen durch das Hinzufügen der unabhängigen Variablen verbessert wird. Das heisst, der F-Test prüft, ob das Modell insgesamt einen Erklärungsbeitrag leistet.
+
+```{r}
+regression1 <-  lm(regression$deko ~ regression$schnee)
+
+reg <- summary(regression1)
+reg
+```
+Hinweis -> Zuerst die abhängige Varibale nennen und dann die unabhängige Varibale. In unserem Beispiel ist die AV = deko und die UV = schnee
+
+
+# 5)	Signifikanz des Regressionsmodells
+
+Das Gesamtmodell wird signifikant (F(1,210)=35.45, p = .000, n=212)
+
+# 6)	Signifikanz der Regressionskoeffizienten und die Regressionsgrade
+
+Abbildung zeigt, dass die t-Tests für den Regressionskoeffizienten von Schnee (t = 5.954, p = .000) und die Konstante (d.h. der Y-Achsenabschnitt; t = -8.7060, p = .0015) signifikant ausfallen. Eine signifikante Konstante bedeutet, dass der Y-Achsenabschnitt nicht 0 beträgt und damit die Regressionsgerade nicht durch den Ursprung geht.
+
+Der signifikante Koeffizient von Deko bedeutet, dass der Regressionskoeffizient von Deko nicht 0 ist und Schnee somit einen signifikanten Einfluss auf Deko aufweist. Somit ergibt sich folgende Regressionsgerade:
+
+NebenkostenProzentvonKaltMiete=1.011465−0.024114∗NettoWarmmieteNebenkostenProzentvonKaltMiete=1.011465−0.024114∗NettoWarmmiete
+
+Der Koeffizient der unabhängigen Variable Netto_Warmmiete wird wie folgt interpretiert: Wenn Warmmiete um eine Einheit steigt (ein zusätzlicher Euro), so sinkt die Nebenkosten_Prozent_von_KaltMiete um 0,024 Einheiten zu (also um 2,4 Prozentpunkte).
+
+# Bestimmtheitsmaß R2:
+
+```{r}
+reg$adj.r.squared
+
+```
+Das sogenannte “R-Quadrat” wird auch als “Bestimmtheitsmass” bezeichnet. Es zeigt, wie gut das geschätzte Modell zu den erhobenen Daten passt. R-Quadrat beschreibt, welcher Anteil der Gesamtstreuung in der abhängigen Variable durch die unabhängige Variable erklärt werden kann. R-Quadrat kann Werte zwischen 0 und 1 annehmen. 0 bedeutet, dass das Modell keine Erklärungskraft besitzt, 1 bedeutet, dass das Modell die beobachteten Werte perfekt vorhersagen kann. Je höher der R-Quadrat-Wert, desto besser also die Passung zwischen Modell und Daten (daher engl. “Goodness of fit”).
+
+R-Quadrat wird von der Anzahl der unabhängigen Variablen im Modell beeinflusst. Dies ist im Falle der multiplen Regression problematisch, da mehrere unabhängige Variablen in das Modell einbezogen werden. Hier steigt das R-Quadrat mit der Anzahl der unabhängigen Variablen, auch wenn die zusätzlichen Variablen keinen Erklärungswert haben. Daher wird R-Quadrat nach unten korrigiert (“Korrigiertes R-Quadrat”). Diese Korrektur fällt umso grösser aus, je mehr Variablen im Modell sind, aber umso kleiner, je grösser die Stichprobe ist. Der R-Output enthält immer R-Quadrat und das korrigierte R-Quadrat. Auch im Falle der einfachen Regression, wo nur eine unabhängige Variable im Modell ist, wird in der Regel das korrigierte R-Quadrat berichtet.
+
+Im vorliegenden Beispiel beträgt das R-Quadrat .133, was bedeutet, dass 13.3% der Gesamtstreuung in Nebenkosten_Prozent_von_KaltMiete durch Netto_Warmmiete erklärt werden kann.
+
+# 7)	Berechnung der Effektstärke
+
+Um die Bedeutsamkeit eines Ergebnisses zu beurteilen, werden Effektstärken berechnet. Im Beispiel wird 13.3% der Gesamtstreuung in der abhängigen Variable durch die unabhängige Variable erklärt, doch es stellt sich die Frage, ob dies hoch genug ist, um als bedeutend eingestuft zu werden.
+
+Es gibt verschiedene Arten die Effektstärke zu messen. Zu den bekanntesten zählen die Effektstärke von Cohen (d) und der Korrelationskoeffizient (r) von Pearson. Der Korrelationskoeffizient eignet sich sehr gut, da die Effektstärke dabei immer zwischen 0 (kein Effekt) und 1 (maximaler Effekt) liegt.
+
+Das R-Quadrat, das bei Regressionsanalysen ausgegeben wird, kann in eine Effektstärke f nach Cohen (1988) umgerechnet werden. In diesem Fall ist der Wertebereich der Effektstärke zwischen 0 und unendlich.
+
+```{r}
+f<- sqrt(reg$adj.r.squared/ (1-reg$adj.r.squared))
+f
+```
+Um die Stärke dieses Effekts zu beurteilen, eignet sich die Einteilung von Cohen (1988):
+
+f = .10 entspricht einem schwachen Effekt
+f = .25 entspricht einem mittleren Effekt
+f = .40 entspricht einem starken Effekt
+
+Damit entspricht die Effektstärke von 0.39 einem starken Effekt.
+
+# 8)	Eine Aussage
+
+Die Höhe der Nettowarmmiete (Nettowarmmiete) hat einen Einfluss darauf, wie hoch die Nebenkosten in Prozent von Kaltmiete (Nebenkosten_Prozent_von_KaltMiete) sind(F(1, 95) = 16.19 p = .000, n = 100). Mit dem einem Euro mehr an der Warmmiete sinken die Nebenkosten in Prozent um 2,4 Prozentpunkte. 13.3% der Streuung des Nebenkosten in Prozent an der Kaltmiete wird durch die Warmmiete erklärt, was nach Cohen (1988) einem starken Effekt entspricht. H0 kannn verworfen werden.

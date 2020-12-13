@@ -1,0 +1,165 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# Wilcoxon-Test, die Alternative zum t-Test für abhängige Stichproben
+
+## Einleitung
+
+Der Wilcoxon-Test – auch Wilcoxon-Vorzeichen-Rang-Test genannt (engl. "Wilcoxon signed-rank test", kurz WSR) – für abhängige Stichproben testet, ob die zentralen Tendenzen zweier abhängiger Stichproben verschieden sind. Der Wilcoxon-Test wird verwendet, wenn die Voraussetzungen für einen t-Test für abhängige Stichproben nicht erfüllt sind.
+
+Von "abhängigen Stichproben" wird gesprochen, wenn ein Messwert in einer Stichprobe und ein bestimmter Messwert in einer anderen Stichprobe sich gegenseitig beeinflussen. In drei Situationen ist dies der Fall:
+
+Messwiederholung:
+Die Messwerte stammen von der gleichen Person, zum Beispiel bei einer Messung vor einem Treatment und nach einem Treatment oder wenn verschiedene Treatments auf die gleiche Person angewendet werden und verglichen werden sollen.
+
+Natürliche Paare:
+Die Messwerte stammen von verschiedenen Personen, diese gehören aber zusammen, zum Beispiel Ehefrau – Ehemann, Psychologe – Patient, Anwalt – Klient, Eigentümer – Mieter oder Zwillinge.
+
+Matching:
+Die Messwerte stammen von verschiedenen Personen, die einander zugeordnet wurden, zum Beispiel aufgrund eines vergleichbaren Werts auf einer Drittvariablen (die nicht im Zentrum der Untersuchung steht).
+
+Der Wilcoxon-Test ist das nichtparametrische Äquivalent des t-Tests für abhängige Stichproben und wird angewendet, wenn die Voraussetzungen für ein parametrisches Verfahren nicht erfüllt sind. Nicht-parametrische Verfahren sind auch bekannt als "voraussetzungsfreie Verfahren", weil sie geringere Anforderungen an die Verteilung der Messwerte in der Grundgesamtheit stellen. So müssen die Daten nicht normalverteilt sein und die Variablen müssen lediglich ordinalskaliert sein. Auch bei kleinen Stichproben und Ausreissern kann ein Wilcoxon-Test berechnet werden.
+
+Alternativ zum Wilcoxon-Test kann auch der Vorzeichentest ausgeführt werden. Der Vorzeichentest berechnet für alle Fälle die Differenzen zwischen den beiden Variablen und klassifiziert sie als positiv, negativ oder verbunden. Falls die beiden Variablen ähnlich verteilt sind, unterscheidet sich die Zahl der positiven und negativen Differenzen nicht signifikant. Der Wilcoxon-Test berücksichtigt sowohl Informationen über die Vorzeichen der Differenzen als auch die Grösse der Differenzen zwischen den Paaren. Da der Wilcoxon-Test mehr Informationen über die Daten aufnimmt, kann er mehr leisten als der Vorzeichentest.
+
+Die Fragestellung des Wilcoxon-Tests für abhängige Stichproben wird oft so verkürzt:
+"Unterscheiden sich die zentralen Tendenzen zweier abhängiger Stichproben?"
+
+## Beispiele für mögliche Fragestellungen
+Verkauft sich ein Elektroprodukt nach der Vergabe eines Rabatts in der Black-Friday Woche besser als zuvor?
+Unterscheiden sich Päarchen in ihrer Sportaktivität?
+Erreichen Sportler nach einem Trainingscamp eine höhere Rangierung in den Ranglisten als vorher?
+Sind Kinder morgens besser gelaunt, wenn sie am Abend zuvor eine bestimmte Zeit Fernsehen gucken durften?
+
+
+## Voraussetzungen zum Wilcoxon-Vorzeichen-Rang-Test
+✓	Die abhängige Variable ist mindestens ordinalskaliert
+✓	Es liegen zwei verbundene Stichproben oder Gruppen vor, aber die verschiedenen Messwertpaare sind voneinander unabhängig (e.g. Paar A und Paar B sind voneinander unabhängig)
+
+# AUFGABE:
+
+In 34 kleinen und grossen Stores wurde die Anzahl der Verkäufe einer Aktionfigur "Held2000" vor und nach der Vergabe eines Rabattes erhoben. Es soll geprüft werden, ob es Unterschiede hinsichtlich der zentralen Tendenz der Anzahl der Verkäufe vor und nach dem Rabatt gibt. Eine Voruntersuchung hat gezeigt, dass die Daten die Voraussetzungen für einen t-Test für abhängige Stichproben nicht erfüllen.
+
+Der zu analysierende Datensatz enthält neben einer Identifikationsnummer(ID) die beiden Messungen der Verkaufszahlen (Vorher für die Erhebung vor der Einführung des Rabatts, Nachher für die Erhebung nach dem Vergeben des Rabatts).
+
+
+## Hypothese
+
+H1: Es gibt einen Unterschied in den Verkaufszahlen für die Aktionfigur “Held2000”vor dem Rabatt und nach dem Rabatt. Mvorher≠Mnacher
+
+H0: Es gibt keinen Unterschied in den Verkaufszahlen für die Aktionfigur “Held2000” vor dem Rabatt und nach dem Rabatt. Mvorher=Mnachher
+
+## Voraussetzungen für den Wilcoxon-Test
+
+Die abhängige Variable ist mindestens ordinalskaliert -> Die Variable ist eigentlich metrisch.
+
+Es liegen zwei verbundene Stichproben oder Gruppen vor, aber die verschiedenen Messwertpaare sind voneinander unabhängig - 1) Verbunden, weil wir den gleichen Store pro Zeile vergleichen 2) z.B Store A und Store B sind unabhängig
+
+### Boxplots zur Darstellung der Werte:
+
+```{r}
+boxplot(wilcoxen$Vorher , main = "Boxplot vor dem Rabatt", xlab = "Vorher", col = "hotpink3")
+```
+Vor dem Rabatt zeigt sich, dass drei Ausreißer auftraten (Median = 31). Jedoch da ein Wicoxen-Test für abhängige Stichproben durch geführt wird, können diese vernachlässigt werden.
+
+```{r}
+boxplot(wilcoxen$Nachher , main = "Boxplot nach dem Rabatt", xlab = "Nach", col = "deepskyblue")
+```
+Der Median für die Var. “Nachher” liegt bei 34. Anhand des Boxplots könnte man auf die Idee kommen, dass ein t-Test für abhängige in Frage kommen könnte. Allerdings bei genauer Betrachtung ist das eher keine gute Idee. Die Varianzen sind sehr unterschiedlich verteilt. Darüber hinaus werden sowohl gross als auch kleine Store berücksichtigt. Daher ist der Wilcoxon zu bevorzugen.
+
+### ALTERNATIV - Vor und Vach dem Rabatt:
+```{r}
+boxplot(wilcoxen$Vorher, wilcoxen$Nachher, main = "Boxplots zu den Verkaufszahlen",col = c("hotpink3", "deepskyblue"), names = c("(links) vorher", "(rechts) nachher"), ylab = "Anzahl der verkauften Aktionfiguren ")
+```
+
+### Berechnung der Mediane:
+```{r}
+library(psych)
+zusammenfassung <-describe(wilcoxen)
+zusammenfassung
+```
+
+### ALTERNATIV:
+
+#### Median der Var. Vorher und Nachher:
+
+```{r}
+sprintf("Median für Vor dem Rabatt : %.2f", median(wilcoxen$Vorher))
+```
+
+```{r}
+sprintf("Median für Nach dem Rabatt : %.2f", median(wilcoxen$Nachher))
+```
+
+```{r}
+sprintf("Anzahl der Daten: %.f", nrow(wilcoxen))
+```
+
+Es gibt einen Unterschied in der zentralen Tendenz zwischen zwei Messzeitpunkten. Vorher dem Rabatt wurden 31 Artikel gekauft (n=34); nach dem Rabatt wurden 34 Artikel verkauft (n=34).
+
+## Ergebnisse des Wilcoxon-Tests:
+
+Ist die Stichprobe hinreichend gross (n > 20), so ist der kritische Wert asymptotisch normalverteilt.
+
+```{r}
+test<- wilcox.test(wilcoxen$Vorher, wilcoxen$Nachher,alternative = "two.sided",paired = TRUE, exact = FALSE)
+test
+```
+
+#### Ist dies nicht der Fall, so wird die exakte Signifikanz verwendet.
+
+```{r}
+test<- wilcox.test(wilcoxen$Vorher, wilcoxen$Nachher,alternative = "two.sided",paired = TRUE, exact = TRUE)
+```
+```{r}
+test
+```
+
+#### doppelt vorkommende Daten
+
+“kann bei Bindungen keinen exakten p-Wert Berechnenkann den exakten p-Wert bei Nullen nicht berechnen”- Da in diesem Datensatz die Rangierung doppelt vorkommen, kann kein exakter p-Wert berechnet werden.
+
+```{r}
+library(exactRankTests)
+```
+
+```{r}
+test<- wilcox.exact(wilcoxen$Vorher, wilcoxen$Nachher,alternative = "two.sided",paired = TRUE, exact = TRUE)
+test
+```
+
+Die Teststatistik beträgt V = 69.5 und der zugehörige Signifikanzwert p = .000. Damit ist der Unterschied signifikant: Die zentralen Tendenzen der beiden Messzeitpunkte unterscheiden sich (Wilcoxon-Test: V = 69.5, p = .0004, n = 34).
+
+## Berechnung der Effektstärke:
+
+$$r=\left| \frac{z}{\sqrt{n}} \right|$$
+
+Der z - Wert
+
+```{r}
+Zstat1<-qnorm(test$p.value/2)
+
+sprintf("Z-Wert für den WSR: %.2f", Zstat1)
+```
+Bei diesem z-Wert handelt es sich um das z-empirisch.
+
+### Anzahl der Daten aus dem Datensatz:
+
+```{r}
+nk<-nrow(wilcoxen[wilcoxen$Vorher!=wilcoxen$Nachher,])
+sprintf("Anzahl ohne Null: %.f", nk)
+```
+Die Anzahl kann auch unter Datenmatrix ausgelesen werden. In dem vorliegenden Beispiel sind es 30 Datensätze.
+
+```{r}
+eff <-abs(Zstat1)/sqrt(nk)
+sprintf("Effektstärke: %.2f", eff)
+```
+Zur Beurteilung der Grösse des Effektes dient die Einteilung von Cohen (1988):
+
+Damit entspricht die Effektstärke von .6 einem starken Effekt.
+
+## Eine Aussage:
+
+Die Verkaufszahlen der Aktionfigur “Held2000” sind nach der Gewährung eines Rabattes signifikant höher (Median = 34.00) als davor (Median = 31; Wilcoxon-Test: V = 69.5, p = .000, n = 34). Die Effektstärke nach Cohen (1992) liegt bei r = .64 und entspricht einem starken Effekt. H0 kann verworfen werden.

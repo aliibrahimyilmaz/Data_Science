@@ -1,0 +1,48 @@
+---
+title: "Das Kreisdiagramm..."
+output: html_notebook
+---
+
+
+
+# Definition
+
+
++ Grafische Darstellung von Anteilen, relativen Häufigkeiten oder Prozenten in Form eines Kreises
++ Kreisdiagramm wird auch Pie-Chart oder im 3D-Format Torte oder Kuchendarstellung genannt
++ Einzelne Anteile nennt man auch Kreis-Sektor oder auch Kuchenstück
++ Je größer ein Anteil, ein Kreis-Sektor desto größer sein Anteil am Gesamten
++ Größe der Anteile werden anhand der 360 Grad Formel ermittelt
++ -> Teilwert / Gesamtwert * 360
+
+
+# Typische Einsatzfelder
++ Umfrage-Ergebnisse
++ Wahl-Ergebnisse und Sitzverteilungen
++ Umsatz- und Ergebnisdarstellungen nach Kontinenten, Regionen, Sparten
++ Portfolio-Darstellungen und Finanz-Investitionen im Asset-Management nach z.B. Ländern / Branchen
+
+
+# Vorteile
++ Kurze prägnante Darstellung von wesentlichen Anteilen
++ Leicht verständlich, etabliert und breite Akzeptanz
++ schnelle Erreichbarkeit der Information auch für den uninformierten Adressaten
+
+
+# Nachteile
++ Zu viele Teilwerte führen zu Unübersichtlichkeit
++ Anzahl der Teilwerte ist idealweise zu begrenzen (7 Teile)
++ Vergleiche sind möglich
++ Trenderkennungen nicht möglich
++ Es kann nur ein Sachverhalt dargestellt werden
+
+
+# Faustregeln:
++ Idealerweise Beschränkung auf bis zu 7 Anteilen
++ Sortierung der Anteile, der Größe nach, beginnend bei 12.00 Uhr
++ Letzte Vielzahl an Anteilen sollten zusammengefasst werden (Sonstiges)
++ Harmonie der Farben bzw. Schraffierungen stellen die Botschaft in den Fokus
+
+
+
+

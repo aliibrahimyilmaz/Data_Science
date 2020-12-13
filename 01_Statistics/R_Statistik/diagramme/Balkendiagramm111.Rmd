@@ -1,0 +1,129 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+data <- data.frame(
+  name=c( rep("braunhaarig",15),  
+          rep("blond",5),
+          rep("rothaarig",10),
+          rep("schwarzhaarig",12),
+          rep("bunthaarig",4))
+  )
+View(data)
+```
+
+```{r}
+a<- sample(x = 1:2, size = 45, replace = TRUE)
+a
+data2 <- data.frame(
+  geschlecht=c(rep("männlich",20),  
+               rep("weilblich",25)),
+  brille = a
+  )
+data2$brille
+View(data2)
+library(magrittr)
+library(dplyr)
+data1 <- data2 %>%
+  mutate(brille   = factor(brille, levels = c(2, 1), labels = c("Ja - Brille", "Nein - Keine Brille")))
+View(data1)
+```
+
+barplot(height, ...)
+
+## Default S3 method:
+barplot(height, width = 1, space = NULL,
+        names.arg = NULL, legend.text = NULL, beside = FALSE,
+        horiz = FALSE, density = NULL, angle = 45,
+        col = NULL, border = par("fg"),
+        main = NULL, sub = NULL, xlab = NULL, ylab = NULL,
+        xlim = NULL, ylim = NULL, xpd = TRUE, log = "",
+        axes = TRUE, axisnames = TRUE,
+        cex.axis = par("cex.axis"), cex.names = par("cex.axis"),
+        inside = TRUE, plot = TRUE, axis.lty = 0, offset = 0,
+        add = FALSE, ann = !add && par("ann"), args.legend = NULL, ...)
+
+## S3 method for class 'formula'
+barplot(formula, data, subset, na.action,
+        horiz = FALSE, xlab = NULL, ylab = NULL, ...)
+
+
+```{r}
+#name = c("braunhaarig","blond","rothaarig","schwarzhaarig","bunthaarig")
+counts <- table(data$name) # Die Ausprägungen werden gezählt
+counts
+barplot(counts, #Infos
+        main = "Säulendiagramm", #Überschrift 
+        #names.arg = name,
+        #beside = TRUE,
+        xlab ="Haarfarben",  # x-Achse
+        ylab = "Anzahl", # Y-Achse
+        col = c("yellow","brown", "green", "red","black") # Farben 
+        )
+```
+
+#That represents the style of axis labels. (0=parallel, 1=all horizontal, 2=all perpendicular to axis, 3=all vertical)
+```{r}
+counts <- table(data$name) # Die Ausprägungen werden gezählt
+barplot(counts, #Infos
+        main = "Balkendiagramm", #Überschrift 
+        xlab ="Haarfarben",  # x-Achse
+        ylab = "Anzahl", # Y-Achse
+        col = c("yellow","brown", "green", "red","black"), # Farben 
+        horiz=TRUE, #Drehen
+        las =1 # Bezeichnung drehen
+        )
+```
+```{r}
+barplot(counts , density=c(5,10,20,30,7) , angle=c(0,45,90,11,36) , col="brown")
+```
+
+
+
+```{r}
+Brille <- table(data1$geschlecht,data1$brille)
+Brille
+
+barplot(Brille,
+        #beside = FALSE,
+        beside = TRUE,
+        col = c("red", "blue")
+        )
+```
+```{r}
+barplot(Brille, #Infos
+        main = "Balkendiagramm", #Überschrift 
+        xlab ="Anzahl",  # x-Achse
+        ylab = "Brille", # Y-Achse
+        col = c("red", "blue"), # Farben
+        beside = TRUE,
+        #beside = FALSE,
+        horiz=TRUE, #Drehen
+        las =1 # Bezeichnung drehen
+        )
+```
+
+##ggplot
+```{r}
+library(ggplot2)
+ggplot(data, aes(x=name)) +
+  
+  geom_bar(color= c("yellow","brown", "green", "red","black"),
+           fill= c("lightskyblue1", "lightskyblue2",   
+                   "lightskyblue4","lightskyblue3",
+                   "lightskyblue1"))
+```
+
+```{r}
+
+library(ggplot2)
+ggplot(data, aes(x=name)) + # Daten
+    geom_bar(color= c("yellow","brown", "green", "red","black"),#Farbe für die Linie
+           fill= c("lightskyblue1", "lightskyblue2",    
+                   "lightskyblue4","lightskyblue3",
+                   "lightskyblue1"))+
+coord_flip() #Drehen
+```
+

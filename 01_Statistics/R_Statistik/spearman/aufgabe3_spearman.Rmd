@@ -1,0 +1,101 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# AUFGABE: Korrelation nach Spearman:
+
+Es würde eine Studie durchgeführt um zu überprüfen, ob das Alter eines Motors Einfluss auf die Leistung hat. Es wurden dazu 14 Fahrzeuge untersucht.
+Findet Sie heraus, ob es einen Zusammenhang besteht? Wie stark ist dieser Effekt?
+
+# 1) Hypothese
+
+(ungerichtet)
+
+H1: Es gibt einen Zusammenhang zwischen das Alter eines Motors und  die Leistung.
+
+H0: Es gibt keinen Zusammenhang zwischen das Alter eines Motors und  die Leistung.
+
+# 2) Voraussetzungen
+
+Die Variablen sind mindestens ordinalskaliert. <- liegt vor.
+
+Variable1: AlterdesMotors
+Variable2: Leistung
+
+```{r}
+spearman <- read_excel("uebung3.xlsx")
+```
+
+
+```{r}
+spearman$AlterdesMotors
+```
+```{r}
+spearman$Leistung
+```
+Beide sind metrisch und ratioskalliert. 
+
+# 3) Grundlegende Konzepte: Was ist Spearman?
+
+Die Rangkorrelationsanalyse nach Spearman berechnet den linearen Zusammenhang zweier mindestens ordinalskalierter Variablen.
+
+Da stets der Zusammenhang zwischen zwei Variablen untersucht wird, wird von einem "bivariaten Zusammenhang" gesprochen.
+
+# 4) Grafische Veranschaulichung des Zusammenhangs
+
+Um visuell zu prüfen, ob ein linearer Zusammenhang vorliegen könnte, empfiehlt es sich vorab ein Streudiagramm erstellen.
+
+```{r}
+plot(spearman$Leistung~ spearman$AlterdesMotors, main = "Streudiagramm zwischen das Alter eines Motors und  die Leistung", xlab = "Alter des Motors", ylab= "Leistung")
+abline(lm(spearman$Leistung ~ spearman$AlterdesMotors, data = spearman), col="red")
+```
+Das Streudiagramm in Abbildung zeigt eine tendenziell negative lineare Beziehung zwischen den beiden Variablen. Das heisst, die beiden Variablen korrelieren vermutlich. Da die Korrelationsanalyse einen ungerichteten Zusammenhang untersucht, lässt er sich auf zwei Weisen ausformulieren: Je höher das Alter des Motors, desto weniger die Leistung; oder Je höher die Leistung, desto weniger das Alter des Motors.
+
+# 5) Deskriptive Statistik
+
+```{r}
+describe(spearman)
+```
+Für die deskriptive Auswertung schauen wir den Median und die Anzahl der Daten an. Das Alter des Motors dieser Stichprobe ist 5.0 Jahre (N= 14) gewesen und die Leistung ist 60.0 PS (N = 14) gewesen.
+
+# 6) Ergebnisse der Korrelationsanalyse
+
+```{r}
+test <- cor.test(spearman$Leistung, spearman$AlterdesMotors, method = "spearman")
+test
+```
+Der R-Output in Abbildung gibt den Korrelationskoeffizienten sowie den p-Wert (Signifikanz) wieder. Es wird ersichtlich, dass ein Zusammenhang vorliegt zwischen Alter des Motors und die Leistung (r = -0.9252 p < 2.2e-16, n = 14). Da r einen negativen Wert aufweist, kann von einem negativen linearen und signifikanter Zusammenhang zwischen Alter des Motors und die Leistung ausgegangen werden. Das bedeutet: Je höher das Alter des Motors ist, desto weniger ist die Leistung.
+
+Hinweis: Aus der deskriptive Statistik kannst die Anzahl der Datensatze entnehmen.
+
+# 7) Berechnung des Bestimmtheitsmasses
+
+Aus der Korrelation lässt sich durch Quadrieren das Bestimmtheitsmass berechnen:
+
+```{r}
+rbestimmt <- (test$estimate ^2) *100
+sprintf("Das Bestimmtheitsmaß liegt bei %.2f %%.", rbestimmt)
+```
+Wird dieser Wert mit 100 multipliziert, so ergibt sich ein Prozentwert. Dieser gibt an, welcher Anteil der Varianz in beiden Variablen durch gemeinsame Varianzanteile determiniert wird. Für das vorliegende Beispiel beträgt der Anteil der gemeinsamen Varianz 85.61%.
+
+# 8) Berechnung der Effektstärke
+
+Um zu bestimmen, wie gross der gefundene Zusammenhang ist, kann man sich an der Einteilung von Cohen (1992) orientieren:
+
+$$
+\begin{align}
+\text{Schwacher Effekt: } 0.10 &< ||r|| < 0.30 \\
+\text{Schwacher bis mittlerer Effekt: } 0.30 &= ||r|| \\
+\text{Mittlerer Effekt: } 0.30 &< ||r|| < 0.50 \\
+\text{Mittlerer bis starker Effekt: }0.50 &= ||r|| \\
+\text{Starker Effekt: } 0.50 &< ||r|| 
+\end{align}
+$$
+```{r}
+sprintf("Die Effektstärke liegt bei %.3f.", test$estimate)
+```
+Damit entspricht ein Korrelationskoeffizient von -0.925 einem starken Effekt.
+
+# 9) Eine Aussage:
+
+Das Alter des Motors und die Leistung korrelieren signifikant (r = -0.9252 p < 2.2e-16, n = 14). Je höher das Alter des Motors war, desto weniger war die Leistung. 85.61% der Streuung der gemeinsamen Varianz kann durch das Alter des Motors und die Leistung erklärt werden. Dabei handelt es sich nach Cohen (1992) um einen starken Effekt. H0 kann verworfen werden.

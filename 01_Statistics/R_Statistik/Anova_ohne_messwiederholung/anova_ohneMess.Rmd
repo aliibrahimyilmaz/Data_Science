@@ -1,0 +1,203 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# Einfaktoriellen Varianzanalyse ohne Messwiederholung : ANOVA
+
+## Aufgabe: 
+
+119 Senioren wurden zufällig vier Gruppen zugeteilt mit denen je eines von vier verschiedenen Trainingsarten durchgeführt wurde. Es soll nun beantwortet werden, welche der vier Trainingsmethoden am effektivsten auf die Ausdauer auswirkt.
+
+Der zu analysierende Datensatz enthält neben einer Probandennummer (ID) die Gruppierungsvariable Trainingsarten, welche je nach Treatment einen Wert zwischen 1 und 4 annimmt, und die Variable Ausdauertest, die den Messwert für die Ausdauer enthält.
+
+## 1) Hypothese:
+
+H1: Es gibt einen Mittelwertsunterschied zwischen der Trainingsarten (Training1, Training 2, Training 3, Training 4) und der Ausdauer.
+
+M1≠M2≠M3≠M4 für min. einen Vergleich
+
+H0: Es gibt keinen Mittelwertsunterschied zwischen der Trainingsarten (Training1, Training 2, Training 3, Training 4) und der Ausdauer. M1=M2=M3=M4
+
+## 2) Voraussetzungen der einfaktoriellen Varianzanalyse ohne Messwiederholung
+
+✓ Die abhängige Variable ist intervallskaliert -> Ausdauer ist metrisch
+
+✓ Die unabhängige Variable (Faktor) ist kategorial (nominal- oder ordinalskaliert) -> Die Trainingsarten sind nominal-skaliert.
+
+✓ Die durch den Faktor gebildeten Gruppen sind unabhängig Jeder TeilnehmerIn hat ausschliesslich in seiner oder ihrer Gruppe trainiert.
+
+✓ Die abhängige Variablen ist normalverteilt innerhalb jeder der Gruppen (Ab > 25 Probanden pro Gruppe sind Verletzungen in der Regel unproblematisch) -> siehe Histogramm
+
+✓ Homogenität der Varianzen: Die Gruppen stammen aus Grundgesamtheiten mit annähernd identischen Varianzen der abhängigen Variablen -> siehe Levene-Test
+
+## 3) Grundlegende Konzepte: Die Grundidee der Varianzanalyse
+
+Die einfaktorielle Varianzanalyse – auch "einfaktorielle ANOVA", da in Englisch "Analysis of Variance" – testet, ob sich die Mittelwerte mehrerer unabhängiger Gruppen (oder Stichproben) unterscheiden, die durch eine kategoriale unabhängige Variable definiert werden.
+
+Die einfaktorielle ANOVA stellt eine Verallgemeinerung des t-Tests für unabhängige Stichproben für Vergleich von mehr als zwei Gruppen (oder Stichproben) dar. 
+
+Die Fragestellung der einfaktoriellen Varianzanalyse wird oft so verkürzt: "Unterscheiden sich die Mittelwerte einer unabhängigen Variable zwischen mehreren Gruppen? Welche Faktorstufen unterscheiden sich?"
+
+## 4) Boxplots
+
+```{r}
+library(readxl)
+anovaohne <- read_excel("anovaohne.xlsx")
+View(anovaohne)
+```
+
+
+```{r}
+boxplot(anovaohne$Aufdauertest ~ anovaohne$Trainingsarten, main = "Boxplots zum Vergleich", ylab = "Ausdauer", xlab= "Trainingsmethode" , col = c("lightgreen", "deepskyblue","tomato", "orange"))
+```
+Boxplot zeigt keine Ausreisser. Die Verteilungen scheinen sich von einander zu unterscheiden, allerdings nicht so eindeutig bei Training 3 und Training 4.
+
+## 5) Normalverteilung
+Um einen ersten Überblick über die Daten zu gewinnen, empfiehlt es sich Histogrammm zu erstellen.
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+anovaohne %>%
+  group_by(Trainingsarten) %>%
+  ggplot(aes(Aufdauertest, color=Trainingsarten)) + 
+  geom_histogram(aes(fill = Trainingsarten), bins = 20) +
+  facet_wrap(~Trainingsarten) +
+  theme_grey()+
+  labs(x= "Ausdauertest",y = "Anzahl" )
+```
+Die Daten sind normalverteilt, wenn auch nicht perfekt.
+
+#### Alternativ QQPlot:
+
+```{r}
+library(car)
+
+qqPlot(Aufdauertest ~ Trainingsarten, data=anovaohne, 
+       layout=c(1, 4))
+```
+Die Daten sind normalverteilt.
+
+## 6) Prüfung der Varianzhomogenität (Levene-Test):
+
+Der Levene-Test prüft die Nullhypothese, dass die Varianzen der Gruppen sich nicht unterscheiden. Ist der Levene-Test nicht signifikant, so kann von homogenen Varianzen ausgegangen. Wäre der Levene-Test jedoch signifikant, so wäre eine der Grundvoraussetzungen der Varianzanalyse verletzt. Gegen leichte Verletzungen gilt die Varianzanalyse als robust; vor allem bei genügend grossen und etwa gleich grossen Gruppen sind Verletzungen nicht problematisch. Bei ungleich grossen Gruppen führt eine starke Verletzung der Varianzhomogenität zu einer Verzerrung des F-Tests. Alternativ können dann auf den den Welch-Test zurückgegriffen werden. Dabei handelt es sich um adjustierte F-Tests.
+
+```{r}
+leveneTest(anovaohne$Aufdauertest ~ anovaohne$Trainingsarten, center="mean")
+```
+
+Im vorliegenden Beispiel ist der Levene-Test signifikant(F(3,115) = 2.908, p = .037), so dass von Varianzhetrogenität ausgegangen werden kann. Das heisst - es muss eine Welch-Korrektur durchgeführt werden.
+
+Mit Welch-Korrektur: p < 0.05 => Ergebnis Signifikant –> Varianzen heterogen
+
+Ohne Welch-Korrektur: p > 0.05 => Ergebnis nicht Signifikant –> Varianzen homogen –> H0 mit Annahme Var1=Var2=… -> Var_n wird angenommen
+
+## 7) Deskriptive Statistiken:
+
+Die Tabelle in Abbildung gibt die Mittelwerte, Standardabweichungen und Grössen aller vier Gruppen wieder. Diese Informationen werden für die Berichterstattung verwendet.
+
+```{r}
+anovaohne %>%
+group_by(Trainingsarten) %>%
+  summarize(Anzahl = n(), Mittelwert = mean(Aufdauertest), Median = median(Aufdauertest), Standardabweichung = sd(Aufdauertest)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+
+Es gibt einen Mittelwertsunterschied zwischen den Gruppen. Trainingsart 2 (M = 48.16, SD = 3.45, N=30) zeigt die besten Ausdauerergebnisse, gefolgt von Trainingsgruppe 2 (M 38.82, SD = 3.99,N=29). Wie bereits beim Boxplot zu erkennen war, ist der Abstand der Mittelwert bei Trainingsart 3 (M = 25.10, SD = 3.05, N=30) und Trainingsart 4( M = 22.03, SD = 2.42, N=30) ähnlich ausgefallen.
+
+## 8) Ergebnisse der einfaktoriellen Varianzanalyse
+
+### mit Welch-Korrektur
+
+```{r}
+ANOVAmitWelch <- oneway.test(anovaohne$Aufdauertest ~ anovaohne$Trainingsarten)
+ANOVAmitWelch
+```
+Das Gesamtmodel ist signifikant geworden (F(3,62.68) = 446.85 , p = .000). Allerdings lässt sich aufgrund dieses Tests nicht bestimmen, welche der vier Gruppen sich signifikant voneinander unterscheiden. Es ist denkbar, dass sich lediglich ein Paar signifikant unterscheidet und zwischen den übrigen keine signifikanten Unterschiede vorliegen. Daher wird ein Post-hoc-Test durchgeführt.
+
+### ohne Welch-Korrektur:
+
+```{r}
+ANOVA <- aov(data=anovaohne, anovaohne$Aufdauertest~anovaohne$Trainingsarten)
+summary(ANOVA)
+```
+
+## 9) Post-hoc-Tests
+
+Obwohl der F-Test zeigt, dass ein Haupteffekt von Trainingsarten auf Ausdauertest besteht, muss anhand von Post-hoc-Tests geklärt werden, zwischen welchen Faktorstufen (Trainingsmethoden) signifikante Unterschiede bezüglich der Ausdauertest bestehen.
+
+Bei der Berechnung von Post-hoc-Tests wird im Prinzip für jede Kombination von zwei Mittelwerten ein t -Test durchgeführt. Im aktuellen Beispiel mit vier Gruppen sind dies 6 Tests. Multiple Tests sind jedoch problematisch, da der Alpha-Fehler (die fälschliche Ablehnung der Nullhypothese) mit der Anzahl der Vergleiche steigt.
+
+Wird nur ein t-Test mit einem Signifikanzlevel von .05 durchgeführt, so beträgt die Wahrscheinlichkeit des Nicht-Eintreffens des Alpha-Fehlers 95 Prozent. Werden jedoch sechs solcher Paarvergleiche vorgenommen, so beträgt die Nicht-Eintreffens-Wahrscheinlichkeit des Alpha-Fehlers (.95)^6 = .735. Um die Wahrscheinlichkeit des Eintreffens des Alpha-Fehlers zu bestimmen, wird 1 - .735 = .2649 gerechnet. Die Wahrscheinlichkeit des Eintreffens des Alpha-Fehlers liegt somit bei 26.49 Prozent. Diese Fehlerwahrscheinlichkeit wird als “Familywise Error Rate” bezeichnet.
+
+Um dieses Problem zu beheben kann zum Beispiel die Tukey angewendet werden. RStudio rechnet das neue Niveau ein, daher können wir weiter auf 0.05 testen.
+
+```{r}
+TukeyHSD(aov(data=anovaohne, anovaohne$Aufdauertest~anovaohne$Trainingsarten))
+TukeyHSD(ANOVA)
+#View(ANOVA)
+```
+Es wird ersichtlich, dass sich die Trainingsmethoden 1 und 2 sowie 3 und 4 bezüglich der Ausdauertest signifikant unterscheiden. (p < .05).
+
+Es können also vier unabhängige/ generalisierbare Gruppen von Trainingsmethoden gebildet werden.
+
+## 10) Plot der Mittelwerte
+
+Spannend ist auch sich die Mittelwerte hilfe dieses Plots anzeigen zu lassen.
+
+```{r}
+ggplot(anovaohne, aes(x=Trainingsarten, y=Aufdauertest, group=1))+
+  stat_summary(fun.y = mean, geom="point", size=3)+
+  stat_summary(fun.y = mean, geom="line")+
+  stat_summary(fun.data = mean_cl_normal, geom="errorbar",width=.2, size=.25)+
+  labs(x="Trainingsart", y="Ausdauer")+
+  theme_classic()
+```
+Wie der Plot in Abbildung erkennen lassen, bestehen bezüglich der vier Trainingsmethoden unterschiede im Mittelwert.
+
+## 11) Berechnung der Effektstärke
+
+#### Das partielle Eta-Quadrat:
+
+Das partielle Eta-Quadrat (partielles η2) ist ein Mass für die Effektgrösse: Es setzt die Variation, die durch einen Faktor erklärt wird, in Bezug mit jener Variation, die nicht durch andere Faktoren im Modell erklärt wird. Das heisst, es wird ausschliesslich jene Variation betrachtet, welche nicht durch die anderen Faktoren im Modell erklärt wird. Das partielle Eta-Quadrat zeigt, welchen Anteil davon ein Faktor erklärt. Im Falle der einfaktoriellen Varianzanalyse ist das partielle Eta-Quadrat ist jener Anteil der korrigierten Gesamtvariation, der durch das Modell erklärt wird.
+
+```{r}
+library(sjstats)
+eta <- eta_sq(ANOVA, partial = TRUE)
+eta
+```
+
+Hinweis: Eta kann als eigenständige Im vorliegenden Beispiel beträgt das partielle Eta-Quadrat .9153. Das heisst, es wird 91.53% der Variation in Ausdauertest durch Trainingsarten aufgeklärt.
+
+#### Effektstärke:
+
+Um die Bedeutsamkeit eines Ergebnisses zu beurteilen, werden Effektstärken berechnet. Im Beispiel sind zwar einige der Mittelwertsunterschiede zwar signifikant, doch es stellt sich die Frage, ob sie gross genug sind, um als bedeutend eingestuft zu werden.
+
+Es gibt verschiedene Arten die Effektstärke zu messen. Zu den bekanntesten zählen die Effektstärke von Cohen (d) und der Korrelationskoeffizient (r) von Pearson.
+
+Da R das partielle Eta-Quadrat ausgibt, wird dieses hier in die Effektstärke nach Cohen (1988) umgerechnet. In diesem Fall befindet sich die Effektstärke immer zwischen 0 und unendlich.
+
+
+```{r}
+eff <- sqrt(eta$partial.etasq /(1-eta$partial.etasq))
+
+eff
+```
+
+Um zu beurteilen, wie gross dieser Effekt ist, kann man sich an der Einteilung von Cohen (1988) orientieren:
+
+Hinweis: Diese Beispiel ist sehr sauber und etwas “zu” eindeutig. Damit entspricht eine Effektstärke von 3.29 einem starken Effekt.
+
+## 12) Eine Aussage
+
+Die Auswahl der Trainingsmethode hat einen signifikanten Einfluss auf die Ausdauer (F(3,62.68) = 446.85 , p = .000). 91.53% der Streuung der Ausdauer-Werte um den Gesamtmittelwert kann durch die Trainingsmethoden erklärt werden. Die Effektstärke nach Cohen (1988) liegt bei f = 3.28 und entspricht einem starken Effekt.
+
+Post-hoc-Tests mit Tukey zeigen, dass sich vier Gruppen von Trainingsarten bilden lassen (alle p < .05): Methode 1 (M 38.82, SD = 3.99,N=29) und Methode 2 (M = 48.16, SD = 3.45, N=30) bilden jeweils eine Gruppe, ebenso die Methode 3 (M = 25.10, SD = 3.05, N=30) und Methode 4 (M = 22.03, SD = 2.42, N=30) bilden jede für sich eine eigene Gruppe.
+
+Damit kann festgehalten werden, dass alle vier Gruppen unabhängige Gruppen bilden und sich signifikant unterscheiden. Methode 2 ist am effektivsten. H0 wird abgelehnt, H1 angenommen.
+
+
+
+
+

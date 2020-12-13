@@ -1,0 +1,206 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# BOXPLOT
+
+Ein großer Vorteil des Box-Plots liegt darin, dass er schnelle Erkenntnisse zur Verteilung der erhobenen Daten liefert.
+
+## Lagemaße
+
+### Median:
+Der Median wird durch die fettgedruckte Linie in der Box angezeigt. Die eine Hälfte der beobachteten Werte ist kleiner oder gleich dem Wert, die andere Hälfte der beobachteten Werte ist größer oder gleich dem Wert. Weitere Infos unter Zentralmaße.
+
+### Box für Interquartilsbereich
+Die Box für den Interquartilsbereich stellt die mittleren 50 % der Daten dar. Sie gibt den Abstand zwischen dem ersten und dem dritten Quartil (Q3–Q1) an.
+
+### Minimum- und Maximalwert (Whisker)
+Der Minimum- und Maximalwert gehen von beiden Seiten der Box aus. Sie stellen die Bereiche für die unteren 25 % und die oberen 25 % der Datenwerte dar.
+
+## Voraussetzung
+Die Daten sollen min. ordinalskaliert sein - besser metrisch.
+
+
+```{r}
+data <- data.frame(
+  name=c( rep("A",50), rep("B",50)),
+  value=c( rnorm(50, 12, 6), rnorm(50, 19, 10))
+)
+View(data)
+```
+
+```{r}
+boxplot(data$value,                    # Daten
+        main = "Ich bin ein Boxplot",  # Überschrift
+        xlab = "Zufallswerte",         # x-Achse
+        col = "lightblue"              # Farbe
+        )
+```
+```{r}
+boxplot(data$value ~ data$name,        # Daten aufteilen zwischen A und B
+       main = "Ich bin ein Boxplot",   # Überschrift
+        xlab = "Zufallswerte",         # x-Achse
+        ylab = "Ausprägung",           # y-Achse
+        col = c("lightblue", "blue")   # Farbe
+        )
+```
+
+# Mittelwerte hinzufügen
+
+```{r}
+means <- aggregate(value ~  name, data, mean) # Mittelwerte errechnen
+means
+```
+```{r}
+boxplot(data$value ~ data$name,        # Daten aufteilen zwischen A und B
+       main = "Ich bin ein Boxplot",   # Überschrift
+        xlab = "Zufallswerte",         # x-Achse
+        ylab = "Ausprägung",           # y-Achse
+        col = c("lightblue", "blue")   # Farbe
+
+        )
+text(1:2, means$value, labels = means$value) 
+```
+# ggplot2
+
+```{r}
+ggplot(data, aes(x = name, y = value)) + geom_boxplot()
+```
+```{r}
+ggplot(data, aes(x=name, #Teilen der Daten
+                 y=value, #Metrische Var.
+                 fill=name)) + #Teilen für die Legende
+                geom_boxplot(
+                             outlier.color="blue",#Ausreißer in Blau
+                             outlier.shape=23, # Form
+                             outlier.size=4) # Größe 
+```
+
+```{r}
+ggplot(data, aes(x=name, #Teilen der Daten
+                 y=value, #Metrische Var.
+                 fill=name)) + #Teilen für die Legende
+                geom_boxplot(
+                             outlier.color="blue",#Ausreißer in Blau
+                             outlier.shape=23, # Form
+                             outlier.size=4)+ # Größe 
+                coord_flip() #Drehen
+```
+
+```{r}
+ggplot(data, aes(x=name, #Teilen der Daten
+                 y=value, #Metrische Var.
+                 fill=name)) + #Teilen für die Legende
+                geom_boxplot(
+                             outlier.color="blue",#Ausreißer in Blau
+                             outlier.shape=23, # Form
+                             outlier.size=4)+ # Größe 
+                stat_summary(fun=mean, # Mittelwert
+                             geom="point", #Punkt
+                             shape=17, # Schwarze Dreiecke
+                             size=4)  #Größe
+```
+
+```{r}
+ggplot(data, aes(x=name, #Teilen der Daten
+                 y=value, #Metrische Var.
+                 fill=name)) + #Teilen für die Legende
+                stat_boxplot(
+                             geom = "errorbar", #Wiskers
+                             width = 0.2)  +   #Breite
+                geom_boxplot()
+```
+
+```{r}
+means <- aggregate(value ~  name, data, mean)
+means
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(data = data, aes(x=name, #Teilen der Daten
+                 y=value, #Metrische Var.
+                 fill=name)) + #Teilen für die Legende
+                geom_boxplot()+ #Erstelle ein Boxplot
+                stat_summary(fun=mean,  # Setze Mittelwert
+                             colour="darkred", #Farbe
+                             geom="point",  #Punkt
+                             shape=18, # Form des Punktes
+                             size=3) + #Größe
+                geom_text(data = means, #Setze Text aus der "means"
+                          aes(label = value, #Label
+                              y = value+ 2.00)) #Ort + 2.0 Punkte
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+head(mtcars)
+```
+```{r}
+mtcars$cyl <- factor(mtcars$cyl)
+mtcars$labels <- row.names(mtcars)
+```
+
+
+```{r}
+summary(mtcars)
+```
+
+
+```{r}
+library(ggplot2)
+library(xtable)
+```
+
+
+```{r}
+p <- ggplot(data = mtcars, aes(x = cyl, y = mpg, fill = cyl))
+p <- p + geom_boxplot() + 
+  ggtitle("Car Milage Data") + 
+  labs(x = "Number of Cylinders", y = "Miles Per Gallon") + 
+  scale_fill_discrete(name = "Cylinders")
+p
+```
+```{r}
+add.outlier <- function(p,labvar = as.character(p$mapping$y)){
+  df <- data.frame(y = with(p$data,eval(p$mapping$y)),
+                   x = with(p$data,eval(p$mapping$x)))
+  
+  df.l <- split(df,df$x)
+  
+  mm <- Reduce(rbind, lapply(df.l,FUN = function(df){
+    data.frame(y = df$y[df$y <= (quantile(df$y)[2] - 1.5 * IQR(df$y)) | df$y >= (quantile(df$y)[4] + 1.5 * IQR(df$y))],
+               x = df$x[df$y <= (quantile(df$y)[2] - 1.5 * IQR(df$y)) | df$y >= (quantile(df$y)[4] + 1.5 * IQR(df$y))]
+    )})
+  )
+  
+  
+  mm$x <- factor(mm$x,levels=sort(as.numeric(as.character(unique(p$data[,as.character(p$mapping$x)])))),
+                 labels = levels(p$data[,as.character(p$mapping$x)])
+  )
+  
+  names(mm) <- c(as.character(p$mapping$y),as.character(p$mapping$x))
+  mm <- merge(p$data[,c(names(mm),labvar)],mm)
+  
+  p + geom_text(data=mm,
+                aes_string(label=labvar),
+                vjust = -0.5)
+}
+```
+
+```{r}
+add.outlier(p)
+```
+

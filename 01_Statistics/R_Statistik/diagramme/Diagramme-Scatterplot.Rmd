@@ -1,0 +1,155 @@
+---
+title: "DIAGRAMME"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+# Defintion/ Beschreibung 
+
+Im Streudiagramm werden bivariate Verteilungen metrischer Variablen veranschaulicht. 
+
+Die Verteilung wird in Punkten abgebildet.
+
+Bivariat: gleichzeitige Betrachtung zweier unterschiedlicher Variablen und deren Verteilung
+
+
+Vor einer Regression und Korrelation prüft man die Datengrundlage mit Hilfe von Streudiagrammen.
+
+Anwendbar bei: Intervallskala, Verhältnisskala, Absolutskala
+
+
+# Beschreibung
+Dadurch entsteht ein visueller Eindruck der Beziehung zwischen den Variablen. Die horizontale X-Achse repräsentiert meist dabei die unabhängige Variable, die vertikale Y-Achse die abhängige.
+
+Ein Nachteil beim Streudiagramm ist, dass man nur einen Datenpunkt sieht, wenn viele Daten ausgewertet werden. Obwohl sich hinter ihm (ein oder mehrere) weitere Punkte verbergen können, ist nur ein Punkt ersichtlich. Abhilfe kann man schaffen, indem die jeweiligen Punkte etwas versetzt dargestellt werden (außerdem: unterschiedliche Farben, Formen, dichte vs. weniger dichte Punktschwärme, etc.)
+
+# Vorausetzung 
+ Die zu untersuchenden Merkmale sollen metrisch sein.
+ Mindestens + 2 Variablen: x und y.
+ 
+ 
+# Gestaltung 
+
+Da eine bivariate Streuung betrachtet wird, sollte man auch die richtige Achsenbezeichnung achten.
+
+Farbe
+Achsenbenennung
+Überschriften
+
+# Code 
+
+Streudiagram 
+ -Base
+```{r}
+data <- data.frame(
+    value1=c(rnorm(50, 8, 5)),
+    value2=c(rnorm(50, 10, 2))
+)
+```
+ 
+```{r}
+View(data)
+```
+ 
+ 
+ Code Streudiagramm - BASE
+ 
+ 
+```{r}
+plot(data$value1 ~ data$value2 ,  # value1: y, value2: x 
+     main = "Streudiagramm - Base",      #Überschrift 
+     xlab = "Value2",             # x-Achse
+     ylab= "Value1",              # y-Achse
+     pch=17,                      # Dreiecke 
+     col= "blue"              # Farbe
+     
+     )              
+
+abline(lm(data$value1 ~ data$value2, data = data), col="red", lwd=3) 
+```
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+#ScatterHist - library(psych)
+Daten hier: uebung2
+ 
+```{r}
+library(psych)
+scatterHist(uebung2$Hwt, uebung2$Bwt,
+             main = "Streudiagramm",      #Überschrift 
+             xlab = "Bwt",             # x-Achse
+             ylab= "Hwt",              # y-Achse
+             pch=19,                      # Dreiecke 
+             col= "blue" ,            # Farbe
+           #ellipse = FALSE,              # Keine Kreise
+          method = "pearson"              #-0.11  ->r
+            
+            )
+```
+ 
+ r = 0.7930296 wird hier in diesem Fall mit angegeben.
+ 
+ 
+ # ggplot2
+ 
+ 
+```{r}
+library(ggplot2)
+
+ggplot(data, # Datensatz
+       aes(x = value1, y = value2))+ #Daten
+       #Punkte: Size -> Größe 1 , Shape: Kreis, Farbe 
+       geom_point(size = 1,  shape=21,  color="blue") +   
+       #Linie einzeichnen, Farbe, Transparenz 
+       geom_smooth(method = "lm", col = "red", alpha=0.7)+
+  
+      # Hintergrund
+       theme(panel.background = element_rect(size = 0.5,                    fill="lightgrey", colour = "darkgrey" , linetype =              "solid"))
+```
+
+
+
+#ggplot2 angewant auf den Datensatz von Uebung2:
+
+
+```{r}
+library(ggplot2)
+
+ggplot(uebung2, # Datensatz
+       aes(x = Bwt, y = Hwt))+ #Daten
+       #Punkte: Size -> Größe 1 , Shape: Kreis, Farbe 
+       geom_point(size = 1,  shape=21,  color="black") +   
+       #Linie einzeichnen, Farbe, Transparenz 
+       geom_smooth(method = "lm", col = "red", alpha=0.7)+
+  
+      # Hintergrund
+       theme(panel.background = element_rect(size = 0.5,                    fill="lightblue", colour = "darkgrey" , linetype = "solid"))
+```
+```
+
+
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r uebung2}
+summary(uebung2)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r uebung2, echo=FALSE}
+plot(uebung2)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

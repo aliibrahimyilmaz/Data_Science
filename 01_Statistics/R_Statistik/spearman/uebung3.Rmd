@@ -1,0 +1,147 @@
+---
+title: "Spearman"
+output: html_notebook
+---
+## Packages
+```{r}
+library(psych) #->Deskriptive Statistik
+library(ggplot2)#->Diagramme
+```
+
+
+
+## Roadmap 
+
+1) Hypothese
+2) Voraussetzungen
+3) Grundlegende Konzepte: Was ist Spearman?
+4) Grafische Veranschaulichung des Zusammenhangs
+5) Deskriptive Statistik
+6) Ergebnisse der Korrelationsanalyse
+7) Berechnung des Bestimmtheitsmasses
+8) Berechnung der Effektstärke
+9) Eine Aussage 
+
+
+```{r}
+head(uebung3)
+```
+
+
+
+# Hypothese
+H0: Es gibt keinen linearen Zusammenhang zwischen den ordinalskalierten Variablen Alter und Leistung von Motoren .$r= 0$<br>
+H1: Es gibt einen linearen Zusammenhang zwischen den ordinalskalierten Variablen Alter und Leistung von Motoren. $r \neq 0$
+
+
+# Vorraussetzungen
+
+Die Variablen sind mindestens ordinalskaliert -> Beide Variablen sind metrisch. 
+
+Die Variablen haben einen linearen Zusammenhang-> siehe Scatterplot
+
+
+# Grundlegende Konzepte: Was ist Spearman?
+
+Bei der Rangkorrelation wird der ungerichtete lineare Zusammenhang zweier Variable untersucht. “Ungerichtet” bedeutet, dass nicht von einer abhängigen und einer unabhängigen Variable gesprochen wird. Es werden folglich keine kausalen Aussagen gemacht.
+
+Die Rangkorrelation nach Spearman ist das nichtparametrische äquivalent der Korrelationsanalyse nach Bravais-Pearson und wird angewendet, wenn die Voraussetzungen für ein parametrisches Verfahren nicht erfüllt sind.
+
++ nicht normalverteilt sei
++ Variablen müssen lediglich ordinalskaliert sein.
++ kleinen Stichproben 
++ Ausreißern 
+
+Oft werden auch die Begriffe “Spearman-Korrelation” oder “Spearmans Rho” verwendet, wenn von einer Rangkorrelation nach Spearman gesprochen wird.
+
+
+#  Grafische Veranschaulichung des Zusammenhangs
+
+Ein Streudiagramm, auch Punktwolke genannt (engl. scatter plot), ist die graphische Darstellung von beobachteten Wertepaaren zweier statistischer Merkmale. Diese Wertepaare werden in ein kartesisches Koordinatensystem eingetragen, wodurch sich eine Punktwolke ergibt.
+
+
+```{r}
+library(ggplot2)#->Diagramme
+
+ggplot(uebung3, aes(x = AlterdesMotors, y = Leistung)) + geom_point(size = 2) + geom_smooth(method = "lm", col = "green")
+```
+Es besteht ein augenscheinlicher negativer linearer Zusammenhang.
+
+
+
+# Deskriptive Statistik
+
+```{r}
+
+library(psych) #->Deskriptive Statistik
+describe(uebung3)
+```
+Im Mittel liegt die Leistung der untersuchten Motoren bei etwa 60 (Median: 60, arithm. Mittel: 61,79). Das Alter der Untersuchten Motoren liegt im Durchschnitt bei 5 Jahren (Mittelwert 5,02; Median: 5). <br>
+
+**Hinweis:** Wichtig sind Median und Anzahl(n).
+
+# Korrelation nach Spearman
+
+Der Korrelationskoeffizient kann nur Werte im Bereich zwischen -1 und +1 annehmen. Ist er kleiner als Null (r < 0), so besteht ein negativer linearer Zusammenhang. Bei einem Wert grösser als Null (r > 0) besteht ein positiver linearer Zusammenhang und bei einem Wert von Null (r = 0) besteht kein Zusammenhang zwischen den Variablen.
+
+
+```{r}
+test1 <- cor.test(uebung3$Leistung, uebung3$AlterdesMotors, method = "spearman")
+test1
+```
+
+
+Die Information aus der Auswertung werden in der Varibale “test” gespeichert.<br>
+
+Es wird ersichtlich, dass ein Zusammenhang zwischen Leistung und Alter des Motors (r = .9252, p = .000, n =14)vorliegt. Da r ein negativen Wert aufweist, kann von einem negativen linearen und signifikanten Zusammenhang zwischen Leistung und Alter des Motors ausgegangen werden. Das bedeutet: Je älter der Motor, desto schwächer der Motor oder je schwächer der Motor, desto älter der Motor. Letzter macht wenig Sinn. 
+
+# Bestimmtheitsmaß - R²
+
+Das Bestimmtheitsmaß, auch Determinationskoeffizient, bezeichnet mit R² ist in der Statistik eine Kennzahl zur Beurteilung der Anpassungsgüte. Das Bestimmtheitsmaß entspricht dem Quadrat des Bravais-Pearson-Korrelationskoeffizienten.
+
+$$Bestimmtheitsmaß=Korrelationskoeffizient2∗100$$
+$$Bestimmtheitsmaß=r2∗100$$
+
+```{r}
+
+rbestimmt <- (test1$estimate)^2  *100
+sprintf("Bestimmtheitsmaß: %.2f Prozent.",rbestimmt)
+```
+
+
+
+
+Zur Berechung des Bestimmtheitsmaßes wird auf die Varibale “test1” zurückgegriffen. Der Korrelationskoeffizient ist in “estimate” gespeichert.<br>
+
+Wird dieser Wert mit 100 multipliziert, so ergibt sich ein Prozentwert. Dieser gibt an, welcher Anteil der Varianz in beiden Variablen durch gemeinsame Varianzanteile determiniert wird. Für das vorliegende Beispiel beträgt der Anteil der gemeinsamen Varianz 85.61%.
+
+
+
+# Effektstärke
+
+Effektstärke (auch Effektgröße) bezeichnet die Größe eines statistischen Effekts. Sie kann zur Verdeutlichung der praktischen Relevanz von statistisch signifikanten Ergebnissen herangezogen werden. Zur Messung der Effektstärke werden unterschiedliche Effektmaße verwendet. Im Rahmen dieses Verfahrens wird die Effektstärke nach Cohen interpretiert.
+
+
+```{r}
+sprintf("Effektstärke: %.2f",abs(test1$estimate))
+```
+
+
+$$
+\begin{align}
+\text{Schwacher Effekt: } 0.10 &< ||r|| < 0.30             \\
+\text{Schwacher bis mittlerer Effekt: } 0.30 &= ||r||      \\
+\text{Mittlerer Effekt: } 0.30 &< ||r|| < 0.50             \\
+\text{Mittlerer bis starker Effekt: }0.50 &= ||r||         \\
+\text{Starker Effekt: } 0.50 &< ||r||        
+\end{align}
+$$
+
+
+Das Ergebnis ist stark nach Cohen(1992).
+
+# Aussage
+
+Das Alter und die Leistung der Motoren korrelieren sig. (rho = -0.925, p = .000, n = 14). Je älter ein Motor, desto schlechter ist die Leistung. 85.61% der Streuung der gemeinsamen Varianz kann durch Alter und Leistung der Motoren erklaert werden (Bestimmtheitsmass). Dabei handelt es sich nach Cohen (1992) um einen starken Effekt. 
+
+H0 kann verworfen werden. H1:"Es gibt einen linearen Zusammenhang zwischen den  Variablen Alter und Leistung von Motoren."

@@ -1,0 +1,152 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# t-Test für eine Stichprobe erklärt den Vergleich eines Erwartungswertes:
+
+### Einführung
+
+Der t-Test für eine Stichprobe prüft anhand des Mittelwertes einer Stichprobe, ob der Mittelwert einer Grundgesamtheit gleich einem vorgegebenen Wert ist (bzw. kleiner oder größer).
+
+Die Fragestellung des t-Tests für eine Stichprobe wird oft so verkürzt:
+"Unterscheiden sich die Mittelwerte zwischen Grundgesamtheit und Stichprobe?"
+
+### Beispiele
+
+Gibt es einen Unterschied im Mittelwert zwischen dem IQ aus der Stichprobe und dem durchschnittlichen IQ aus Deutschland?
+Gibt es einen Unterschied zwischen dem Mittelwert des Marktingbugets der Firma "Klein" und dem Branchendurchschnitt?
+
+### Voraussetzungen für den t-Tests für unabhängige Stichproben
+
+✓	Die Variable ist min. intervallskaliert
+✓	Die Variable ist in die Grundgesamtheit normalverteilt
+
+# Beispiel einer Studie:
+
+Als Kontrollvariable wird der IQ erhoben. Es hat sich nämlich in anderen Testverfahren herausgestellt, dass der IQ ein Störfaktor darstellt. Daher soll nun unterschucht werden, ob der IQ aus der Stichprobe sich vom Durchschnitts-IQ in Deutschland unterscheidet.
+
+## Datensatz einlesen
+```{r}
+IQ <- read.csv("uebung5.csv")
+```
+
+## Überblick über die Daten
+
+```{r}
+head(IQ)
+```
+```{r}
+str(IQ)
+```
+
+# 1) Hypothese
+
+H1: Es gibt einen Unterschied zwischen dem Durchschnitts-IQ in Deutschland und dem IQ aus der Stichprobe.
+
+H0: Es gibt keinen Unterschied zwischen dem Durchschnitts-IQ in Deutschland und dem IQ aus der Stichprobe.
+
+# 2) Voraussetzungen für den t-Tests für eine Stichprobe
+
+✓ Die Variable ist min. intervallskaliert -> IQ_bio ist metrisch
+✓ Die Variable ist in die Grundgesamtheite normalverteilt -> siehe Histogramm
+
+### Prüfung der Normalverteilung mittels Histogramm
+
+```{r}
+hist(IQ$IQbio, main = "Der IQ der Stichprobe", xlab ="IQ-Punkte", ylab = "Anzahl", col = "purple")
+```
+
+```{r}
+x <- IQ$IQbio
+h<-hist(x, breaks=5, col="lightgreen", xlab="Projekterfolg",
+main="Histogram des Projekterfolgs",
+ylab= "Anzahl")
+xfit<-seq(min(x),max(x),length=40)
+yfit<-dnorm(xfit,mean=mean(x),sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="tomato", lwd=2)
+```
+
+### Prüfung der Normalverteilung mittels QQPlot
+
+
+
+```{r}
+library(car)
+qqPlot(IQ$IQbio, main = "Der IQ der Stichprobe", col = "purple")
+```
+Es liegt eine Normalverteilung vor.
+
+# 3) Ergebnis der Auswertung 
+
+Der DurchschnittsIQ in Deutschland liegt bei 100 IQ-Punkten.
+
+```{r}
+t.test(IQ$IQbio, mu=100)
+```
+
+Es gibt keinen Unterschied zwischen dem IQ der Stichprobe und dem Durchschnitts IQ (t(26)= -3.1951, p= 0.003, n= 27). Daher kann die H0 beibehalten werden.
+
+## z-Transformation 
+
+
+```{r}
+psych::describe(IQ$IQbio)
+```
+
+
+```{r}
+IQ_Bio_Z <- scale(IQ$IQbio)
+
+```
+
+
+```{r}
+x <- IQ_Bio_Z
+h<-hist(x, breaks=5, col="lightgreen", xlab="Projekterfolg",
+main="Histogram des Projekterfolgs",
+ylab= "Anzahl")
+xfit<-seq(min(x),max(x),length=40)
+yfit<-dnorm(xfit,mean=mean(x),sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="tomato", lwd=2)
+```
+
+### Hinzufügen der Z-Werte zum Datensatz
+
+```{r}
+IQ<- cbind(IQ, "IQBio_Z" = IQ_Bio_Z)
+View(IQ)
+IQ$IQBio_Z <- NULL # Die Spalte löschen, falls zu viele Z-Werte hinzugefügt wurden
+```
+
+
+### Alternative
+
+```{r}
+IQ["IQBio_z"] <- IQ_Bio_Z
+View(IQ)
+```
+
+## Auswertung des z-Testes für eine Stichprobe
+
+$$ z = \frac {(x-µ)}{σ} = \frac {(100 -95.11)}{16.08} = 0.3041$$
+
+
+```{r}
+sprintf("Der Z-Wert für den DurchschnittsIQ aus Deutschland ist: %f:",((100 -95.11)/16.08))
+```
+
+
+
+```{r}
+t.test(IQ$IQBio_z, mu = 0.304)
+```
+
+## Aussage 
+
+Es gibt keine Unterschied zwischen dem Mittelwert der Grundgesamtheit und der Stichprobe (t(26)= -1.57, p=.126, n= 29). Daher kann die H0 beibehalten werden.
+
+
+
+

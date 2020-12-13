@@ -1,0 +1,75 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+Salary <- read.csv("C:/Users/aliyi/Desktop/ALFATRAINING/statistik/R_Statistik/Salary.csv", sep=";")
+View(Salary)
+```
+
+# Kreisdiagramm / Pie Chart
+
+```{r}
+myfirsttable <- table(Salary$rank)
+myfirsttable
+```
+
+```{r}
+pie(myfirsttable)
+```
+```{r}
+head(myfirsttable)
+```
+```{r}
+myfirsttable <- data.frame(myfirsttable)
+
+head(myfirsttable)
+```
+```{r}
+library(ggplot2)
+ 
+ggplot(myfirsttable, aes (x="", y = Freq, fill = factor(Var1))) + #Daten  einlesen
+  geom_bar(width = 1, stat = "identity") + #immer so 
+    coord_polar("y")+ # Kreisdiagramm
+  geom_text(aes(label = paste(round(Freq / sum(Freq) * 100, 1), "%")), #Berechnung der Prozente
+            position = position_stack(vjust = 0.5)) + #Position mittig
+  
+  theme_classic() + #Farbe
+  
+  theme(plot.title = element_text(hjust=0.5), #Titel Höhe
+        axis.line = element_blank(), # keine Linie
+        axis.text = element_blank())+ # keine Linietext
+
+  
+  
+  labs(fill = "Jobtitel", #Legend 
+       x = NULL, # keine Achsenwerte 
+       y = NULL, # keine Achsenwerte 
+       title = "Kreisdiagramm") # Titel des Kreisdiagramms
+```
+
+```{r}
+
+library(ggplot2)
+
+ggplot(myfirsttable, aes (x="", y = Freq, fill = factor(Var1))) + #Daten einlesen
+geom_bar(width = 1, stat = "identity") + #immer so 
+coord_polar("y")+ # Kreisdiagramm
+geom_text(aes(label = paste(round(Freq / sum(Freq) * 100, 1), "%")), #Berechnung der Prozente
+          position = position_stack(vjust = 0.5)) + #Position mittig
+theme_classic() + #Farbe
+theme(plot.title = element_text(hjust=0.5), #Titel Höhe
+      axis.line = element_blank(), # keine Linie
+      axis.text = element_blank())+ # keine Linietext
+labs(fill = "Jobtitel", #Legend 
+      x = NULL, # keine Achsenwerte 
+      y = NULL, # keine Achsenwerte 
+      title = "Kreisdiagramm") # Titel des Kreisdiagramms
+
+```
+
+# Balken -/ Säulendiagramm
+
+# Boxplot
+
+# Liniendiagram

@@ -1,0 +1,294 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# Aufgabe 5
+
+## t-Tests für abhängige Stichproben
+
+
+```{r}
+library(boot)
+results <- sample(x= uebung5$X, size = 5, replace = T)
+head(results)
+
+before <- uebung5$IQbio[c(results)] 
+after <- uebung5$IQfoster [c(results)]
+
+results1 <- sample(x= uebung5$X, size = 5, replace = T)
+
+before1 <- uebung5$IQbio[c(results1)] 
+after1 <- uebung5$IQfoster [c(results1)]
+
+
+results2 <- sample(x= uebung5$X, size = 5, replace = T)
+
+before2 <- uebung5$IQbio[c(results2)] 
+after2 <- uebung5$IQfoster [c(results2)]
+
+```
+
+
+
+```{r}
+layout(matrix(c(1,1,2,3), 2, 2, byrow = F))
+# PLOT1
+
+plot(x = rep(1, length(before)), 
+y = before, 
+xlim = c(.5, 2.5), 
+ylim = c(60, 140),
+ylab = "IQ", 
+xlab = "Gepaarter t-Test",
+main = "Punkte", 
+xaxt = "n")
+
+
+points(x = rep(2, length(after)), y = after)
+
+
+segments(x0 = rep(1, length(before)), 
+y0 = before, 
+x1 = rep(2, length(after)), 
+y1 = after, 
+col = gray(0, .5))
+
+
+mtext(text = c("IQ-Bio", "IQ-Forster"), 
+side = 1, at = c(1, 2), line = 1)
+
+# PLOT2
+plot(x = rep(1, length(before1)), 
+y = before1, 
+xlim = c(.5, 2.5), 
+ylim = c(60, 140),
+ylab = "IQ", 
+xlab = "Gepaarter t-Test",
+main = "Punkte", 
+xaxt = "n")
+
+
+points(x = rep(2, length(after1)), y = after1)
+
+
+segments(x0 = rep(1, length(before1)), 
+y0 = before1, 
+x1 = rep(2, length(after1)), 
+y1 = after1, 
+col = gray(0, .5))
+
+
+mtext(text = c("IQ-Bio", "IQ-Forster"), 
+side = 1, at = c(1, 2), line = 1)
+
+# PLOT2
+plot(x = rep(1, length(before2)), 
+y = before2, 
+xlim = c(.5, 2.5), 
+ylim = c(60, 140),
+ylab = "IQ", 
+xlab = "Gepaarter t-Test",
+main = "Punkte", 
+xaxt = "n")
+
+
+points(x = rep(2, length(after2)), y = after2)
+
+
+segments(x0 = rep(1, length(before2)), 
+y0 = before2, 
+x1 = rep(2, length(after2)), 
+y1 = after2, 
+col = gray(0, .5))
+
+
+mtext(text = c("IQ-Bio", "IQ-Forster"), 
+side = 1, at = c(1, 2), line = 1)
+
+
+```
+
+
+```{r}
+library(ggpubr)
+d <- data.frame(before = uebung5$IQbio, after = uebung5$IQfoster)
+ggpaired(d, cond1 = "before", cond2 = "after", fill = "condition", palette = "jco")
+
+```
+
+
+```{r}
+slm <- lm(uebung5$IQbio ~ uebung5$IQfoster, data = uebung5)
+plot(x = uebung5$IQbio, y = uebung5$IQfoster, col = "blue")
+abline(slm, col = "red")
+```
+
+## Aufgabenstellung:
+
+Es würde eine Studie durchgeführt um zu überprüfen, ob es einen Unterschied zwischen der kognitiven Verarbeitung bei Zwillingen gibt. Dabei ist der eine Zwilling bei den biologischen Eltern aufgewachsen, während das Geschwisterkind adoptiert worden ist.
+
+Variable1: IQ des Zwillings, welches bei seinen biologischen Eltern aufgewachsen ist (IQbio)
+Varibale2: IQ des Zwillings, welches bei seinen Adoptiveltern aufgewachsen ist (IQforster)
+
+```{r}
+data <- uebung5
+```
+
+
+## 1) Hypothese:
+
+H1: Es gibt einen Unterschied zwischen Bio-Zwilling und Adopt-Zwilling bei der kognitiven Verarbeitung.
+
+H0: Es gibt keinen Unterschied zwischen Bio-Zwilling und Adopt-Zwilling bei der kognitiven Verarbeitung.
+
+## 2) Voraussetzungen des t-Tests für abhängige Stichproben:
+
+Die abhängige Variable ist min. intervallskaliert -> Ja, IQ ist metrisch.
+
+Es liegen zwei verbundene Stichproben oder Gruppen vor, aber die verschiedenen Messwertpaare sind voneinander unabhängig. 1) Sie sind verbundenen durch die Geschwestern, 2) aber unabhängige, weil es zwei verschiedene Messpaare (A und B) sind.
+
+Die Unterschiede zwischen den verbundenen Testwerten sind in der Grundgesamtheit normalverteilt (bei Stichproben > 30 sind Verletzungen unproblematisch)
+
+### Erzeuge neue Variable:
+
+```{r}
+# Differenz erstellen
+zwischen <- data$IQbio -  data$IQfoster
+zwischen
+```
+
+```{r}
+# Die Spalte "Differenz" wird zum Datensatz hinzugefügt
+data <- cbind(data, "Differenz" = zwischen)
+View(data)
+```
+
+### Pruefung der Verteilung:
+
+#### Histogramm zur Prüfung des Normalverteilung
+
+```{r}
+hist(data$Differenz, xlab = "Differenz zwischen Bio- und Adopt-Zwilling bei der IQ", ylab= "Anzahl", main ="Histogramm der Differenz", breaks =6,  col = "hotpink3")
+```
+
+#### ALTERNATIVE: QQ-Diagramm zur Prüfung des Normalverteilung:
+
+Deine Werte müssen entlang einer aufsteigenden Gerade liegen, so dass Du eine ähnliche Verteilung vermuten kannst.
+
+```{r}
+library(car)
+
+qqPlot(data$Differenz, main = "QQPlot für die Var. Differenz")
+```
+
+Es gibt eine Normalverteilung.
+
+## 3) Grundlegende Konzepte: Was ist t-Test für abhängige Stichproben?:
+
+Der t-Test für abhängige Stichproben überprüft, ob die Mittelwerte zweier abhängiger/gepaarter Stichproben verschieden sind.
+
+## 4) Deskriptive Statistiken und Korrelation:
+
+### Korrelation:
+
+```{r}
+library(car)
+scatterplot(data$IQbio, data$IQfoster)
+```
+
+Es liegt eine positiver-linearer Zusammenhang vor.
+
+#### Korrelation nach Bravais-Pearson:
+
+Der Korrelationskoeffizient kann nur Werte im Bereich zwischen -1 und +1 annehmen. Ist er kleiner als Null (r < 0), so besteht ein negativer linearer Zusammenhang. Bei einem Wert grösser als Null (r > 0) besteht ein positiver linearer Zusammenhang und bei einem Wert von Null (r = 0) besteht kein Zusammenhang zwischen den Variablen.
+
+```{r}
+test <- cor.test(data$IQbio, data$IQfoster)
+test
+```
+
+Die kognitiven Verarbeitung des Bio-Zwillings und des Adopt-Zwilllings korrelieren positiv-linear signifikant (r = .88, p = .000, n = 27).
+
+Bei Messwiederholungen ist es möglich, dass die Daten der ersten und zweiten Erhebung (respektive eines Messwertpaars) miteinander korrelieren. Es ist plausibel, dass zwei verbundene Messungen sich ähnlich sind und dass innerhalb eines Messwertpaares eher geringere Unterschiede auftreten als zwischen den Paaren.
+
+Es wird ersichtlich, dass ein Zusammenhang zwischen IQBio und IQfoster(r = .88, p = .000, n = 27)vorliegt. Da r einen positiven Wert aufweist, kann von einem positiven linearen und signifikanten Zusammenhang zwischen IQBio und IQfoster ausgegangen werden. Für das Beispiel ergibt sich eine starke Korrelation von r = .88.
+
+### Deskriptive Statistiken:
+
+```{r}
+library(psych)
+g <- describe(data)
+g
+```
+
+Es zeigt sich, dass es einen kleinen Mittelwertsunterschied zwischen der IQ des Bio-Zwillings und der IQ des Adopt-Zwilllings in Punkto IQ gibt.
+
+Es zeigt sich, dass es einen Mittelwertsunterschied zwischen IQBio und IQForster sehr gering ausfällt. 
++ IQBio:(M= 95.11, SD = 16.08, n= 27),
++ IQBFoster: (M=95,30, SD = 15.74, n= 27)
+
+Daher liegt die Vermutung nahe, dass keine Unterschied zwischen den IQs besteht.
+
+## 5) Ergebnisse des t-Tests für abhängige Stichproben:
+
+```{r}
+testVER<- t.test(data$IQfoster, data$IQbio, alternative = "two.sided", paired = TRUE, conf.level = .95)
+
+testVER
+```
+
+Die Teststatistik beträgt t = 0.12438 und der zugehörige Signifikanzwert p = 0.902. Damit gibt es keinen signifikanten Unterschied. Die Mittelwertsunterschiede der beiden IQs können zufälliger Natur sein (t(26) = 0.12438, p = .902, n= 27).
+
+## 6) Berechnung der Effektstärke:
+
+### Cohen und Pearson:
+
+Die Effektstärke ist ein Maß für die Stärke eines Treatments bzw. Phänomens. Effektstärken sind damit eine der wichtigsten Größen in empirischen Studien. Zur Einschätzung der praktischen Bedeutsamkeit existieren verschiedene Effektstärkemaße, die bei der Interpretation der Größe eines Effektes helfen.
+
+$$r=\sqrt{\frac{t^2}{t^2+df}}$$
+
+```{r}
+eff1 <- abs(sqrt(testVER$statistic^2 / (testVER$statistic^2 + testVER$parameter)))
+
+sprintf("Effektstärke: %.4f",eff1)
+```
+
+Zur Beurteilung der Groesse des Effektes dient die Einteilung von Cohen (1992):
+
+r = .10 entspricht einem schwachen Effekt
+r = .30 entspricht einem mittleren Effekt
+r = .50 entspricht einem starken Effekt
+
+Damit liegt kein Effektstärke vor (r= 0.02)
+
+Auf der Webseite: Statistik mit Jule werden weitere Effektstärke beschrieben und empfohlen.
+
+### ALTERNATIV: Hedges g
+
+$$
+\begin{align}
+\text{Schwacher Effekt: } 0.20 &< ||g|| < 0.50             \\
+\text{Schwacher bis mittlerer Effekt: } 0.50 &= ||g||      \\
+\text{Mittlerer Effekt: } 0.50 &< ||g|| < 0.80             \\
+\text{Mittlerer bis starker Effekt: }0.80 &= ||g||         \\
+\text{Starker Effekt: } 0.80 &< ||g||        
+\end{align}
+$$
+
+
+```{r}
+diff <- testVER$estimate
+
+sed <- sd(data$IQfoster - data$IQbio)
+
+g <- diff/sed
+
+sprintf("Effektstärke: %.4f",g)
+```
+
+Zur Beurteilung der Größe des Effektes: Damit liegt kein Effektstärke vor (g= -0.0239)
+
+## 7) Eine Aussage:
+
+Es zeigt sich, dass die kognitiven Verarbeitung bei Zwillingen statistisch nicht signifikant sich unterscheiden (t(26) = 0.12438, p = 0.902, n= 27). Die Mittelwerte unterscheiden sich nicht: der IQ des Bio-Zwillings bei 95.11 (SD = 16.08, , MEDIAN= 94, n= 27) und der IQ des Adopt-Zwilllings bei 95.30 (SD = 15.74, MEDIAN= 94, n=27) liegen. Die Effektstärke nach Cohen (1992) liegt bei r = 0.0244 und entspricht damit keinem Effekt. H0 kann NICHT verworfen werden, H0 wird angenommen.
+

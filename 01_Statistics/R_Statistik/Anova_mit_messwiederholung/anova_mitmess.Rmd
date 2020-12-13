@@ -1,0 +1,342 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# ANOVA mit Messwiederholung :Einfaktorielle Varianzanalyse (mit Messwiederholung)
+
+Die einfaktorielle Varianzanalyse mit Messwiederholung testet, ob sich die Mittelwerte mehrerer abhängiger Gruppen (oder Stichproben) unterscheiden.
+Die einfaktorielle Varianzanalyse mit Messwiederholung stellt eine Verallgemeinerung des t-Tests für abhängige Stichproben (oder Gruppen) für mehr als zwei Gruppen dar. Der Begriff "Varianzanalyse" wird wie bei allen Varianzanalysen oft mit "ANOVA" abgekürzt, da sie in Englisch "Analysis of variance" bezeichnet wird.
+
+Von "abhängigen" Stichproben (oder Gruppen) wird gesprochen, wenn ein Messwert in einer Stichprobe und ein bestimmter Messwert in einer anderen Stichprobe sich gegenseitig beeinflussen.
+
+In drei Situationen ist dies der Fall:
+
+### Messwiederholung: 
+
+Die Messwerte stammen von der gleichen Person, zum Beispiel bei einer Messung vor einem Treatment, während einem Treatment und nach einem Treatment oder wenn verschiedene Treatments auf die gleiche Person angewendet werden und verglichen werden sollen.
+
+### Natürliche Paarungen:
+
+Die Messwerte stammen von verschiedenen Personen, diese gehören aber zusammen, zum Beispiel Ehefrau – Ehemann – Paartherapeut, Psychologe – Patient – Angehörige, Anwalt – Klient – Richter – Kläger.
+
+### Matching:
+
+Die Messwerte stammen von verschiedenen Personen, die einander zugeordnet wurden, zum Beispiel aufgrund eines vergleichbaren Werts auf einer Drittvariablen (die nicht im Zentrum der Untersuchung steht).
+
+Mittels einer Varianzanalyse mit Messwiederholung können – obwohl der Name sich explizit auf Messwiederholungen bezieht – alle drei Typen von abhängigen Daten untersucht werden, also auch natürliche Paarungen oder einander zugeordnete Personen. Im Fokus der Analyse stehen die Unterschiede zwischen den jeweils verbundenen Messwerten. Oft wird ein Verlauf über die Zeit untersucht: Es wird zum Beispiel zu verschiedenen Zeitpunkten während eines Treatments (z.B. eine Diät, eine Therapie) dessen Erfolg gemessen (z.B. eine Gewichtsreduktion, Depressionswerte). Die Varianzanalyse betrachtet nun die Veränderung innerhalb der Personen und prüft, ob sich die Messzeitpunkte signifikant unterscheiden. Die Unterschiede zwischen den Personen sind dabei von untergeordneter Bedeutung.
+
+Die einzelnen Messzeitpunkte werden gelegentlich als "Faktorstufen" oder "Treatments" bezeichnet, besonders wenn nicht eine Entwicklung über die Zeit, sondern lediglich ein Vergleich der Messungen das Ziel ist. Dies ist beispielsweise der Fall, wenn verschiedene Prognosemethoden der Krankheitsdauer miteinander verglichen werden. Entsprechend wird bei einer Messwiederholung auch von einem "Faktor" gesprochen. Als "einfaktoriell" wird eine Varianzanalyse mit Messwiederholung bezeichnet, wenn sie lediglich einen Faktor, also einen Messwiederholungs-Faktor, verwendet.
+
+Die Fragestellung der einfaktoriellen Varianzanalyse mit Messwiederholung wird oft so verkürzt: "Unterscheiden sich die Mittelwerte einer abhängigen Variable zwischen mehreren abhängigen Gruppen, resp. Messzeitpunkten?"
+
+## Beispiele zur Fragestellungen
+
+1) Wie verändert sich das Fettanteil des Körpers im Verlaufe einer dreimonatigen Boxtraining mit drei Einheiten pro Woche? Dabei wird das Fettanteil des Körpers jeden Woche erhoben.
+
+2) Wie wirken sich die Verhaltenstherapie auf Nikotinsucht bei Kettenrauchern aus? Der Therapierfolg wird zu sechs Messzeitpunkten über ein halbes Jahr erhoben.
+
+3) Wie verändern sich die Umsatz eines Produkts nach der Schaltung eines Werbespots im Regionalfernsehen? Die Verkaufszahlen werden dabei vor der Ausstrahlung, kurz danach, sowie 2 und 4 Monate danach erhoben.
+
+## Voraussetzungen der einfaktoriellen Varianzanalyse mit Messwiederholung
+
+✓	Die abhängige Variable ist intervallskaliert
+✓	Die abhängige Variable ist normalverteilt innerhalb jedes Messzeitpunktes (Ab > 25 Probanden pro Messzeitpunkt sind Verletzungen in der Regel unproblematisch)
+✓	Sphärizität ist gegeben (Mauchly-Test auf Sphärizität)
+✓	Es liegen min. drei verbundene Stichproben oder Gruppen vor, aber die verschiedenen Messwertpaare sind voneinander unabhängig
+
+
+## Beispiel einer Studie
+
+Es soll untersucht werden, ob es einen Unterschied zwischen Training und Gewichtsreduktion gibt. Daher nehmen die Teilnehmer an einem innovativen Training teil. T0 vor dem Training, T1 nach dem ersten Training, T2 nach dem zweiten Training und T3 nach dem letzten Training. Verändert sich die Gewicht im Verlauf des Monats?
+
+
+Der zu analysierende Datensatz enthält neben einer Probandennummer (Proband) die vier Messungen des Gewichtes (T0, T1, T2, T3 ). Damit beinhaltet er also pro Person eine Zeile und pro Messwiederholung eine Spalte (Variable).
+
+
+```{r}
+library(dplyr) # <%<
+library(ggplot2) #Diagramme
+```
+
+
+```{r}
+library(readxl)
+mitmess <- read_excel("mitmess.xlsx")
+mitmess
+```
+
+
+# 1. Hypothese
+
+H1: Das Gewicht der Testpersonen unterscheidet sich zu verschiedenen Messzeitpunkten.
+
+$$M_{T0} \neq M_{T1} \neq M_{T2}\neq M_{T3} \rightarrow \text{min. in einem Vergleich}$$
+
+H0: Das Gewicht der Testpersonen unterscheidet sich nicht zu verschiedenen Messzeitpunkten.
+
+$$M_{T0} = M_{T1} = M_{T2}= M_{T3}$$
+
+# 2. Voraussetzungen der einfaktoriellen Varianzanalyse mit Messwiederholung
+
+Die abhängige Variable ist intervallskaliert -> Die Variable “Gewicht” ist ratioskaliert.
+
+Die abhängige Variable ist normalverteilt innerhalb jedes Messzeitpunktes (Ab > 25 Probanden pro Messzeitpunkt sind Verletzungen in der Regel unproblematisch) -> siehe Histogrammm oder QQ-Plot
+
+Sphärizität ist gegeben -> siehe Mauchly-Test auf Sphärizität
+
+### Normalverteilung der Daten mithilfe des Histogrammes
+
+#### Alternativ 1
+```{r}
+mitmess %>%
+  group_by(Zeitpunkt) %>%
+  ggplot(aes(Gewicht, color=Zeitpunkt)) + 
+  geom_histogram(aes(fill = Zeitpunkt), bins = 20) +
+  facet_wrap(~Zeitpunkt) +
+  theme_grey()+
+  labs(x= "Gewicht in kg",y = "Anzahl" )
+```
+Die Daten sind augenscheinlich eher nicht normalverteilt. Daher sollte der Friedman bevorzugt werden. Allerdings im Rahmen der Übungen und unter Anbetracht der Größe der Daten wird die Normalverteilung als gegeben angesehen.
+
+#### Alternativ 2
+
+```{r}
+ggplot(mitmess, 
+aes(Gewicht, 
+color=Zeitpunkt
+)
+) +
+geom_histogram(binwidth=1, 
+aes(fill = Zeitpunkt), 
+bins = 20,
+show.legend = TRUE 
+) +
+geom_density(aes(y = ..count.., 
+fill = Zeitpunkt
+), 
+alpha=0.2, 
+colour = "black",
+size = 0.3,
+show.legend = TRUE
+) +
+theme(panel.background = element_rect(size = 0.5, fill = "gray91", colour = "gray", linetype='solid'),
+panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "gray45"),
+panel.grid.minor = element_line(size = 0.5, linetype = 'solid', colour = "gray"),
+plot.background = element_rect(fill = "moccasin")
+)+
+scale_fill_discrete(name = "Untersuchte Zeitpunkte", 
+breaks = c("T0", "T1", "T2", "T3"),
+labels = c("T0 - mit Start des Trainings", 
+"T1 - nach 1 Woche Training", 
+"T2 - nach 2 Wochen Training",
+"T3 - nach 3 Wochen Training"
+),
+aesthetics = "fill" # Die System-Farben werden verwendet.
+)+
+guides(#fill = FALSE, # Mit "fill = FALSE" werden alle Legenden (automatisch,manuell) abgeschaltet.
+color = FALSE
+) + 
+facet_wrap(~ Zeitpunkt, 
+ncol = 2
+) + 
+labs(title = "Histogramme",
+subtitle = "xxx",
+x = "Gewicht",
+y = "Anzahl"
+) 
+```
+
+# 3. Grundlegende Konzepte
+
+Die Fragestellung der einfaktoriellen Varianzanalyse mit Messwiederholung wird oft so verkürzt: "Unterscheiden sich die Mittelwerte einer abhängigen Variable zwischen mehreren abhängigen Gruppen, resp. Messzeitpunkten?"
+
+# 4. Deskriptive Statistik 
+
+Die Tabellegibt die Mittelwerte, Standardabweichungen und Grössen aller vier Messzeitpunkte wieder. Diese Informationen werden für die Berichterstattung verwendet.
+
+```{r}
+mitmess %>%
+group_by(Zeitpunkt) %>%
+  summarize(Anzahl = n(), Mittelwert = mean(Gewicht), Median = median(Gewicht), Standardabweichung = sd(Gewicht)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+
+Es gibt einen Mittelwertsunterschied zwischen den Messzeitpunkten. Vor dem Training wogen die Teilnehmer im Mittel 85,97 kg (SD = 8.82, n=73). Nach einer Woche Training lag das Gewicht bei 81.86 (SD = 9.07,n=73). In der zweiten Woche bei 77.97 kg(SD=9.17,n=73). In der letzten Woche haben die Teilnehmer nur noch 73.03 kg im Schnitt(SD=9.39,n=73) gewogen. Damit haben Sie innerhalb von vier Wochen 12 kg abgenommen.
+
+Hinweis Die Zahl der Daten sollte identsich sein. Hier sind es immer 73 Personen.
+
+# 5. Mauchly-Test auf Sphärizität
+
+Eine Voraussetzung für die Durchführung einer Varianzanalyse mit Messwiederholung ist die sogenannte “Compound symmetry”: Diese ist gegeben, wenn die Stichprobenvarianzen der einzelnen Messzeitpunkte homogen und die Korrelationen zwischen jedem Paar von Messzeitpunkten identisch sind, wenn folglich homogene Stichprobenvarianzen und -korrelationen vorliegen.
+
+Sphärizität ist eine etwas weniger restriktive Form der “Compound symmetry”. Sphärizität liegt vor, wenn die Varianzen der Differenzen zwischen jeweils zwei Messzeitpunkten gleich sind. Dieser Test ist folglich erst ab drei Messzeitpunkten relevant (bei zwei Messzeitpunkten nur ein Paar). Um die Voraussetzung der Sphärizität zu überprüfen, wird der Mauchly-Test durchgeführt. Ist der Mauchly-Test nicht signifikant, so kann von Sphärizität ausgegangen werden. Wäre der Mauchly-Test aber signifikant, so läge keine Sphärizität vor.
+
+Ist die Voraussetzung der Sphärizität nicht erfüllt, so werden die Freiheitsgrade der Signifikanztests angepasst, indem sie mit einem Korrekturfaktor Epsilon (ε) multipliziert werden. R gibt einerseits das Epsilon nach Greenhouse-Geisser aus, andererseits das Epsilon nach Huynh-Feldt. Das erstere ist etwas restriktiver und wird daher bei stärkeren Verletzungen der Annahme der Sphärizität eingesetzt: Ist das Epsilon nach Greenhouse-Geisser < .75, so wird die Korrektur nach Greenhouse-Geisser verwendet. Ist das Epsilon nach Greenhouse-Geisser > .75, so wird die Korrektur nach Huynh-Feldt eingesetzt.
+
+H0 :Die Varianzen der Differenzen zwischen jeweils zwei Messzeitpunkten sind gleich.
+H1 :Die Varianzen der Differenzen zwischen jeweils zwei Messzeitpunkten sind nicht gleich.
+
+Ist das Epsilon: p > 0.05 => Ergebnis nicht Signifikant –> Sphärizität
+Ist das Epsilon: p < 0.05 => Ergebnis Signifikant –> keine Sphärizität-> Wenn dies der Fall ist, müssen die Freiheitsgrade mit dem Korrekturfaktor angepasst werden.
+
+-> Ist Epsilon < 0.75 ->Greenhouse-Geisser
+-> Ist Epsilon > 0.75 ->Huynh-Feldt
+
+# 6. Ergebnisse der einfaktoriellen Varianzanalyse mit Messwiederholung
+
+Die Tabelle gibt den Signifikanztest für den sogenannten “Haupteffekt” der Messwiederholung aus. Ein Haupteffekt ist der direkte Effekt eines Faktors auf die abhängige Variable. Es geht bei Innersubjekteffekten um Unterschiede innerhalb von Personen, nicht zwischen Personen.
+
+Da von keine Sphärizität ausgegangen werden kann, müssen die Freiheitsgrade korrigiert werden. Muss eine Korrektur der Tests verwendet werden, so wird entsprechend die Zeile “Greenhouse-Geisser” oder “Huynh-Feldt” berichtet, je nachdem welche der beiden Korrekturen angebracht ist.
+
+```{r}
+library(afex)
+```
+```{r}
+anova <- aov_car(Gewicht~Error(ID/Zeitpunkt), data = mitmess, return ="univariate")
+anova
+```
+
+Ist das Epsilon: p > 0.05 => Ergebnis nicht Signifikant –> Sphärizität Ist das Epsilon: p < 0.05 => Ergebnis Signifikant –> keine Sphärizität-> Wenn dies der Fall ist, müssen die Freiheitsgrade mit dem Korrekturfaktor angepasst werden. -> Ist Epsilon < 0.75 ->Greenhouse-Geisser -> Ist Epsilon > 0.75 ->Huynh-Feldt
+
+```{r}
+out5b <- aov_car(Gewicht~Error(ID/Zeitpunkt), data = mitmess)
+out6a <- anova(out5b, es="pes", correction="none", intercept= TRUE)
+out6b <- anova(out5b, es="pes", correction="GG")
+out6c <- anova(out5b, es="pes", correction="HF")
+out6 <- rbind("nicht Korrigiert"=out6a, "Greenhouse-Geisser"=out6b, "Huynh-Feldt"=out6c)
+out6
+```
+
+Die Korrektur in diesem Beispiel wird nach Greenhouse-Geisser durchgeführt, dass bedeutet die Freiheitsgrade werden mit dem Greenhouse-Geisser Eplison multipliziert.
+
+$$df1 = 3*0.50228 \rightarrow  1.506$$
+$$df2 = 216*0.50228 \rightarrow  108.49$$
+Die Freiheitsgrade entnehmen wir der dritte Zeile von “out6”.
+
+Eine Varianzanalyse mit Messwiederholung zeigt, dass sich das Training der ProbandInnen je nach Messzeitpunkt unterscheidet. (F(1.506,108.49) = 1676.5, p = .000, n = 73).
+
+### Alternativ 2 (library ez)
+
+```{r}
+mitmess$Zeitpunkt = as.factor(mitmess$Zeitpunkt)
+mitmess$ID = as.factor(mitmess$ID)
+```
+
+```{r}
+library(ez)
+```
+
+```{r}
+anova1 <- ezANOVA(mitmess, dv = Gewicht, wid = ID, within = Zeitpunkt, detailed = TRUE)
+anova1
+```
+```{r}
+df1 <- anova1$ANOVA$DFn[2]*anova1$`Sphericity Corrections`$GGe
+df1
+```
+
+```{r}
+df2 <- anova1$ANOVA$DFd[2]*anova1$`Sphericity Corrections`$GGe
+df2
+```
+
+
+# 7. Post-hoc-Tests
+
+Obwohl der F-Test zeigt, dass ein Haupteffekt der Training besteht, muss anhand von Post-hoc-Tests geklärt werden, zwischen welchen Messzeitpunkten signifikante Unterschiede bezüglich der Konzentrationsfähigkeit bestehen.
+
+$$\frac{k*(k-1)}{2}=\frac{4*(4-1)}{2}= \frac{12}{2} =6$$
+
+Bei der Berechnung von Post-hoc-Tests wird im Prinzip für jede Kombination von zwei Mittelwerten ein Vergleich durchgeführt. Im aktuellen Beispiel mit vier Gruppen sind dies 6 Tests.
+
+Multiple Tests sind jedoch problematisch, da der Alpha-Fehler (die fälschliche Ablehnung der Nullhypothese) mit der Anzahl der Vergleiche steigt. Wird nur ein t-Test mit einem Signifikanzlevel von .05 durchgeführt, so beträgt die Wahrscheinlichkeit des Nicht-Eintreffens des Alpha-Fehlers 95%.
+
+Werden jedoch zehn solcher Paarvergleiche vorgenommen, so beträgt die Nicht-Eintreffens-Wahrscheinlichkeit des Alpha-Fehlers (.95)6 = .735.
+
+Um die Wahrscheinlichkeit des Eintreffens des Alpha-Fehlers zu bestimmen, wird 1 - .735 = .265 gerechnet.
+
+Die Wahrscheinlichkeit des Eintreffens des Alpha-Fehlers liegt somit bei 26.5%. Diese Fehlerwahrscheinlichkeit wird als “Familywise Error Rate” bezeichnet.
+
+Hierbei wird α durch die Anzahl der Paarvergleiche dividiert. Im hier aufgeführten Fall ist dies .05/6 = .008.
+
+```{r}
+pairwise.t.test(mitmess$Gewicht, 
+                mitmess$Zeitpunkt, 
+                p.adjust.method = "none", 
+                paired = TRUE, 
+                data = mitmess)
+```
+
+```{r}
+TukeyHSD(aov(data=mitmess, mitmess$Gewicht~mitmess$Zeitpunkt))
+#TukeyHSD(ANOVA)
+#View(ANOVA)
+```
+Tukey ist nur für das Vergleich. Es eignet sich eher für ohne Messwiederholung. 
+
+Es wird ersichtlich, dass alle vier Messzeitpunkt sich signifikant unterscheiden(p < .008). Daher lassen sich für eigenständige Gruppen bilden. Diese vier Gruppen sind generalisierbar.
+
+# 8. Profildiagramm
+
+```{r}
+ggplot(mitmess, aes(x=Zeitpunkt, y=Gewicht, group=1))+
+  stat_summary(fun = mean, geom="point", size=3)+
+  stat_summary(fun = mean, geom="line")+
+  stat_summary(fun.data = mean_cl_normal, geom="errorbar",width=.1, size=.15)+
+  labs(x="Zeitpunkt", y="Gewicht in kg")+
+  theme_classic()
+```
+Es zeigt sich, dass die Gewichtsreduzierung mithilfe des Training erfolgreich ist.
+
+### Das partielle Eta-Quadrat
+
+Das partielle Eta-Quadrat (partielles η2) ist ein Mass für die Effektgrösse:
+
+Während bei eta² angegeben wird, wie viel der Gesamtvariation durch einen Effekt erklärt wird, ist es beim partiellen eta2 lediglich der Anteil der Effektvariation an der Summe aus Effekt- und Residualvariation.
+
+$$eta_p^2 = \frac{QS_{Treatment}}{QS_{Treatment}+QS_{Residual}}$$
+
+```{r}
+sprintf("Partielle Eta-Quadrat für 'Zeitpunkt': eta= %.4f", out6a$pes[2])
+```
+
+Im vorliegenden Beispiel beträgt das partielle Eta-Quadrat .9588. Das heisst, es wird 95,88% der Variation der Gewichtsreduktion durch die Messzeite aufgeklärt.
+
+# 9. Berechnung der Effektstärke
+
+Um die Bedeutsamkeit eines Ergebnisses zu beurteilen, werden Effektstärken berechnet. Im Beispiel sind zwar einige der Mittelwertsunterschiede zwar signifikant, doch es stellt sich die Frage, ob sie gross genug sind, um als bedeutend eingestuft zu werden.
+
+Da R das partielle Eta-Quadrat ausgibt, wird dieses hier in die Effektstärke nach Cohen (1992) umgerechnet. In diesem Fall befindet sich die Effektstärke immer zwischen 0 und unendlich.
+
+$$f=\sqrt\frac{\eta^{2}}{1-\eta^{2}}=\sqrt\frac{eta^{2}}{1-eta^{2}}$$
+
+```{r}
+eff <- sqrt(out6a$pes[2]/(1-out6a$pes[2]))
+sprintf("Effektstärke: f= %.3f",eff)
+```
+
+
+Um zu beurteilen, wie gross dieser Effekt ist, kann man sich an der Einteilung von Cohen (1988) orientieren:
+
+$$\begin{align}
+\text{Schwacher Effekt: } 0.10 &< ||f|| < 0.25             \\
+\text{Schwacher bis mittlerer Effekt: } 0.25 &= ||f||      \\
+\text{Mittlerer Effekt: } 0.25 &< ||f|| < 0.40             \\
+\text{Mittlerer bis starker Effekt: }0.40 &= ||f||         \\
+\text{Starker Effekt: } 0.40 &< ||f||        
+\end{align}$$
+
+Damit entsprechen die Effektstärken von 4.825 einem starken Effekt.
+
+# 10. Eine Aussage
+
+Eine Varianzanalyse mit Messwiederholung zeigt, dass sich das Training der ProbandInnen je nach Messzeitpunkt unterscheidet. (F(1.51,108.49) = 1676.5, p = .000, partielles η2 = .9588, n = 73). Der Mauchly-Test ergab, dass keine Sphärizität gegeben ist, weshalb die Greenhouse-Geisser-Korrektur angewendet wurde (ϵ = .50228), wodurch sich korrigierte Freiheitsgrade ergeben.
+
+Der Post-Hoc-Test zeigt, dass das Training der ProbandInnen zum Messzeitpunkt T0 (vor dem Training)(M = 85.97, SD = 8.82, n = 73) signifikant höher als zu Messzeitpunkt T1(erste Woche)(M = 81.86, SD = 9.07, n = 73), Messzeitpunkt T2(zweite Woche) (M = 77.97, SD = 9.17, n = 73) und Messzeitpunkt T3(dritte Woche)(M = 73.02, SD = 9.39, n = 73). Die Teilnehmer haben im Schnitt 12 kg abgenommen.
+
+Es können vier Gruppen generalisiert werden. Zu Beginn des Trainings gewiegen die Teilnehmer am meistern und den vier Einheiten am wenigsten. Das Training ist ein Erfolg.
+
+Die Effektstärke liegt bei f=4.82 und entspricht damit nach Cohen (1988) einem starken Effekt.
+
+H0 kann verworfen werden, H1 angenommen.
+

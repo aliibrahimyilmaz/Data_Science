@@ -1,0 +1,134 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# Aufgabe 9: Pearson Chi-Quadrat-Test | Cramers V
+
+## Tragen Männer oder Frauen mehr Brille?
+
+### Daten
+
+Variable1: Brille
+Varibale2: Geschlecht
+
+## Aufgabenstellung:
+
+Tragen Männer oder Frauen mehr Brille?
+
+## 1. Hypothese:
+
+H1: Es gibt keinen Zusammmenhang zwischen dem Geschlecht und den Tragen Brille.
+
+H0: Es gibt keinen Zusammmenhang zwischen dem Geschlecht und den Tragen Brille.
+
+## 2. Voraussetzungen:
+
+Die Variablen sind kategorial (nominal- oder ordinalskaliert)
+
+### 2.1. Datensatz:
+
+```{r}
+library(readxl)
+chi <- read_xlsx("uebung9.xlsx")
+chi
+```
+
+## 3. Balkendiagramm:
+
+```{r}
+counts <- table(chi$Geschlecht, by = chi$Brille)
+
+counts
+
+barplot(counts, main="Balkendiagramm zur Tragen Brille", col=c("deepskyblue","tomato"),
+        ylab="Anzahl Personen", xlab = "Tragen Brille", beside=T,
+        names.arg =c("M-BrilleJa", "W-BrilleJa", "M-BrilleNein", "W-BrilleNein"))
+```
+
+
+## 4. Kreuztabelle:
+
+```{r}
+counts<- table(Geschlecht = chi$Geschlecht, Brille = chi$Brille)
+print("beobachtete Werte ")
+print(counts)
+```
+
+Die Tabelle wurde angelegt.
+
+## 5. Erwarteten Werte:
+
+```{r}
+ch <- chisq.test(counts, correct = F)
+print("Erwartete Werte ")
+ch
+```
+
+```{r}
+round(ch$expected, 2)
+```
+
+Die beobachteten und die erwarteten Werte wurden verglichen. Es zeigen sich für das Beispiel einen Unterschiede. Ob es jedoch signifikant sind, wird mittels Chi-Quadrat-Test geprüft.
+
+## 6. X² :
+
+### Fall 2 : (n > 50 und df = 1 und die erwarteten Zellhäufigkeiten sind > 5)
+
+**Anpassung: Korrektur nach Yates ** 
+
+$$
+\chi^2 = \sum^I_{i=1}\sum^J_{j=1}\frac{(\Bigl| f_{ij}-f^{'}_{ij}\Bigl| -0.5)^2}{f^{'}_{ij}}
+$$
+
+
+```{r message=FALSE, warning=FALSE}
+ch <- chisq.test(counts, correct = TRUE) # Die Anpassung nach Yates - correct = TRUE - Die Formel wird um -0.5 erweietert
+ch 
+
+``` 
+**Bericht:**(Chi-Quadrat(1) = 16.99, p = 3.758e-05)
+
+```{r}
+sprintf("kritischer Prüfwert: %.2f",qchisq(0.95, df=1))
+```
+
+**Hinweis:** $$kritische \thinspace Prüfwert < empirsche \thinspace Prüfwert  \rightarrow sig. \\ 3.84 < 16.99 \rightarrow sig$$
+
+Es zeigt sich, dass ein sig. Ergebnis vorliegt (Chi-Quadrat(1) = 16.99, p = 3.758e-05, n = 200). Damit gibt es einen Zusammenhang zwischen dem Geschlecht und dem Tragen einer Brille.
+
+## 7. Cramers ´V:
+
+$$ \mbox{Cramers V} = \sqrt{\frac{\chi^2}{n(2-1)}} = \sqrt{\frac{`r ergebnis$statistic`}{`r anzahl` (2-1)}}$$
+
+```{r}
+anzahl <- nrow(chi)
+
+sprintf("Der Datensatz hat %d Zeilen.",anzahl)
+```
+
+```{r}
+sprintf("Das Chi-Quadrat liegt bei %.2f.",ch$statistic)
+```
+
+```{r}
+cramersV <- sqrt(( ch$statistic)/(anzahl*(2-1)))
+sprintf("Die Effektstärke liegt bei %.2f.",cramersV)
+```
+
+Cramer s V ist immer positiv -> keine Aussage über die Richtung des Zusammenhangs
+
+$$
+\begin{align}
+\text{Schwacher Effekt: } 0.1 &< ||Cramers V|| \leq  0.3 \\
+\text{Schwacher bis mittlerer Effekt: }0.3 &< ||Cramers V|| \leq  0.4 \\
+\text{Mittlerer Effekt: } 0.4 &< ||Cramers V|| < 0.5 \\
+\text{Mittlerer bis starker Effekt: }0.5 &= ||Cramers V|| \\
+\text{Starker Effekt: } 0.5 &< ||Cramers V|| 
+\end{align}
+$$
+
+Es zeigt sich für unsere Auswertung, dass ein schwacher Zusammenhang besteht.
+
+## 8. Aussage:
+
+Der Geschlecht und das Tragen Brille stehen in einem Zusammenhang (Chi-Quadrat(1) = 16.99, p = .000, n= 200). Der Zusammenhang ist schwach (Cramers V = .29). Damit kann die H0 verworfen werden.

@@ -1,0 +1,132 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+### AUFGABE: t-Tests für unabhängige Stichproben
+
+```{r}
+data <- read.csv("insurance.csv")
+data
+```
+
+# Beschreibung:
+
+Gibt es einen Unterschied in der durchschnittlichen Kosten (charges) der Kunden in der Krankenkasse von Raucher und nicht Raucher?
+
+Variable_1 (AV): "charges" (das Geld in US Dollars, das von Krankenkasse für Behandlungen bezahlt werden muss)
+Variable_2 (UV): "smoker" (Raucher)
+
+## 1) Hypothese:
+
+(ungerichtete)
+
+H1: Es gibt einen Unterschied zwischen der Kosten (charges) in der Krankenkasse von Raucher und nicht Raucher. MM≠MF
+
+H0: Es gibt keinen Unterschied zwischen der Kosten (charges) in der Krankenkasse von Raucher und nicht Raucher. MM=MF
+
+## 2) Voraussetzungen des t-Tests für unabhängige Stichproben
+
+Die abhängige Variable ist min. intervallskaliert -> "charges" ist metrisch  (AV)
+
+Es liegt eine unabhängige Variable vor, mittels der die beiden zu vergleichenden Gruppen gebildet werden. -> Ja, Raucher und nicht Raucher
+
+Das untersuchte Merkmal ist in den Grundgesamtheiten der beiden Gruppen normalverteilt -> siehe Histogramm
+
+Homogenität der Varianzen: Die Gruppen kommen aus Grundgesamtheiten mit annähernd identischer Varianz -> siehe Levene-Test
+
+Die einzelnen Messwerte sind voneinander unabhängig (das Verhalten einer Versuchsperson hat keinen Einfluss auf das Verhalten einer anderen) -> ist gegeben.
+
+### Prüfung der Normalverteilung mithilfe des Histogramms:
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+  data %>%
+  group_by(smoker) %>%
+  ggplot(aes(charges)) + 
+    geom_histogram( binwidth=5000, aes(fill=smoker), color="#e9ecef", alpha=0.7 ) + # Erstelle ein Histogramm, Unterteilung, Farbe + Transparenz
+   facet_wrap(~smoker)+ # Zwei Graphen
+    theme_classic()+ #Farbschema
+    labs(x="Gruppierungen", y="Anzahl") # Beschriftung
+```
+
+Es liegt eine Normalverteilung von.
+
+## 3) Grundlegende Konzepte: Was ist t-Test für unabhängige Stichproben?
+
+Der t-Test für unabhängige Stichproben testet, ob die Mittelwerte zweier unabhängiger Stichproben verschieden sind.
+
+Die Fragestellung des t-Tests für unabhängige Stichproben wird oft so verkürzt:
+"Unterscheiden sich die Mittelwerte zweier unabhängiger Stichproben?"
+
+## 4) Deskriptive Statistiken
+
+```{r}
+library(dplyr)
+data %>%
+group_by(smoker) %>%
+  summarize(Anzahl = n(), Mittelwert = mean(charges), Median = median(charges), Standardabweichung = sd(charges)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+Es zeigt sich für diese Fragestellung einen Mittelwertsunterschied. Die Kosten bei Raucher ist höher (M = 32050.23 Dollar SD = 11541.55, n = 274) als bei nicht-Raucher (M = 8434.27 Dollar SD = 5993.78, n = 1064).
+
+## 5) Test auf Varianzhomogenität (Levene-Test)
+
+Der t-Test für unabhängige Gruppen setzt Varianzhomogenität voraus. Liegt Varianzheterogenität vor (also unterschiedliche Varianzen), so müssen unter anderem die Freiheitsgerade des t-Wertes angepasst werden. Ob die Varianzen nun homogen (“gleich”) sind, lässt sich mit dem Levene-Test auf Varianzhomogenität prüfen.
+
+Der Levene-Test verwendet die Nullhypothese, dass sich die beiden Varianzen nicht unterscheiden. Daher bedeutet ein nicht signifikantes Ergebnis, dass sich die Varianzen nicht unterscheiden und also Varianzhomogenität vorliegt. Ist der Test signifikant, so wird von Varianzheterogenität ausgegangen.
+
+```{r}
+library(carData)
+
+leveneTest(data$charges, factor(data$smoker), center = mean)
+```
+Also es ist zuerkennen, das Homogenität vorliegt nicht, da der Levene-Test signifikant ist. Daher können wir nicht von gleichen Varianzen ausgehen (F(1, 1336) = 403.26, p = .000). Es ist daher notwendig, eine Welch-Korrektur durchzuführen.
+
+Mit Welch-Korrektur: p < 0.05 => Ergebnis Signifikant –> Varianzen heterogen
+
+Ohne Welch-Korrektur: p > 0.05 => Ergebnis nicht Signifikant –> Varianzen homogen –> H0 mit Annahme Var1=Var2
+
+## 6) Ergebnisse des t-Tests für unabhängige Stichproben
+
+An dieser Stelle findet die eigentliche Auswertung des t-Testes statt. Beim t-test wird die t-Verteilung verwendet.
+
+Auch hier ist auf die Reihenfolge zu achten erst AV(charges) und dann UV(smoker). Da in diesem Beispiel eine ungerichtete Hypothese verwendet wird mit einem Sig.-Niveau von 0.05,ist "con= 0.95, alt ="two.sided"" zu verwenden. Sollten Sie sich jedoch entscheiden eine gerichtete Hypothese zu verwenden, dann empfiehlt es sich folgende Zeilen zu ersetzen "con= 0.95, alt ="greater"" Je nach Richtung "less" or "greater". Sollte eine 1 bei p-value stehen ist es genau die andere Richtung.
+
+“Var.eq = True” bedeutet, dass die Varianzen homogen (gleich) sind, bzw. “Var.eq = False” das die Varianzen heterogen sind.
+
+### MIT Welch-Korrektur:
+
+```{r}
+welch<- t.test(data$charges~data$smoker, var.eq = FALSE, con= 0.95, alt = "two.sided")
+welch
+```
+Die Teststatistik betraegt t = -32.752 und der zugehörige Signifikanzwert p = .000. Damit ist der Unterschied signifikant: Mittelwerte der Raucher und nicht-Raucher unterscheiden sich (t(311.85) = -2.7817, p = 0.000)
+
+## 7) Berechnung der Effektstärke:
+
+Bei ungleichgroßen Gruppen:
+
+Diese Formel verwendet das EffSize-Package - Cooper et al. (2009):
+
+```{r}
+library(effsize)
+
+cohen.d(d = data$charges, f= data$smoker)
+```
+Interpretation von d nach Cohen (1988):
+
+$$\begin{align}
+\text{Schwacher Effekt: } 0.20 &< ||d|| < 0.50             \\
+\text{Schwacher bis mittlerer Effekt: } 0.50 &= ||d||      \\
+\text{Mittlerer Effekt: } 0.50 &< ||d|| < 0.80             \\
+\text{Mittlerer bis starker Effekt: }0.80 &= ||d||         \\
+\text{Starker Effekt: } 0.80 &< ||d||        
+\end{align}$$
+
+Damit entspricht eine Effektstaerke von 3.16 einem starker Effekt.
+
+## 8) Eine Aussage:
+
+Die Kosten bei Raucher ist signifikant höher (M = 32050.23 Dollar SD = 11541.55, n = 274) als bei nicht-Raucher (M = 8434.27 Dollar SD = 5993.78, n = 1064). Die Effektstärke liegt bei d = 3.16 und entspricht damit einem starker Effekt nach Cohen (1988). H0 kann verworfen werden, H1 angenommen.

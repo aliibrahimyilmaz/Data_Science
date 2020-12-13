@@ -1,0 +1,186 @@
+---
+title: "Mann-Whitney-U-Test"
+output: html_notebook
+---
+
+## Packages 
+
+```{r warning=FALSE}
+library(dplyr)# -> Deskriptive Statistik Variante 1
+library(psych)# -> Deskriptive Statistik Variante 2
+library(ggplot2)# -> Diagramme Variante 2
+library(exactRankTests)#-> U-Test
+```
+
+
+
+## Roadmap 
+
+1. Hypothese
+2. Voraussetzungen des Mann-Whitney-U-Tests
+3. Grundlegende Konzepte
+4. Deskriptive Statistik
+5. Boxplot
+6. Ergebnisse des Mann-Whitney-U-Tests
+7. Berechnung der Effektstärke
+8. Eine Aussage
+
+
+
+# Hypothese
+
+H1: Es gibt einen Unterschied in der Entscheidungsbeurteilung zwischen der Bauch und Kopf.
+
+H0: Es gibt keinen Unterschied in der Entscheidungsbeurteilung zwischen der Bauch und Kopf.
+
+
+# Voraussetzungen des Mann-Whitney-U-Tests
+
+Die abhängige Variable ist mindestens ordinalskaliert -> Entscheidungsbeurteilung wurde nur einmal erfragt. Es handelt sich um eine sub. Einschätzung.
+
+Es liegt eine unabhängige Variable vor, mittels der die beiden zu vergleichenden Gruppen gebildet werden. -> Bauch vs Kopf
+
+Bei diesen Ausprägungen eignet sich der U-Test:
+
+   + kleine Stichproben
+   + Ausreisser
+   +  ordinalskalierte Daten
+   +  keine Normalverteilung
+
+
+# Grundlegende Konzepte
+
+Der Mann-Whitney-U-Test für unabhängige Stichproben wird auch "Wilcoxon Rangsummen-Test" (engl. "Wilcoxon rank-sum test", kurz: WRS) genannt. Er testet, ob die zentralen Tendenzen zweier unabhängiger Stichproben verschieden sind.Der Mann-Whitney-U-Test ist die nichtparametrische Alternative für den t-Test für unabhängige Stichproben, wenn die Voraussetzungen nicht erfüllt sind. 
+
+
+
+# Deskriptive Statistik
+
+
+### Variante 1
+
+```{r}
+#library(dplyr)
+
+uebung6 %>%
+group_by(KopfODERBauch) %>% #Gruppierung  
+  summarize(Anzahl = n(), Median = median(Beurteilung)) %>%
+  mutate_if(is.numeric, round, 2)# Runden nach der zweiten Kommastelle und die Zahl als nummerisch klassifizieren
+```
+
+
+### Variante 2
+```{r}
+
+#library(psych) 
+
+describe.by(uebung6$Beurteilung, group = uebung6$KopfODERBauch, mat = TRUE)
+```
+
+
+
+Es ist zu erkennen, dass sich der Median der beiden Gruppen unterscheidet. Die Gruppe “Kopf” hat einen Median von 4.5 (n = 11) und die Gruppe “Bauch” hat einen Median von 10 (n = 8). Damit beurteilen die Teilnehmer der "Bauch-Gruppe" ihre Entscheidung höher / besser, als die der "Kopf-Gruppe".
+
+
+
+
+# Boxplot
+
+### Variante 1 
+```{r}
+Farben <- c("lightblue3", "pink3")
+
+boxplot(uebung6$Beurteilung ~  uebung6$KopfODERBauch, 
+    col=Farben, 
+    ylab="Entscheidungsbeurteilung" , xlab="- Bauch vs. Kopf -")
+
+```
+
+### Variante 2
+
+```{r}
+#library(ggplot2)
+ggplot(uebung6, # Datensatz
+       aes(x =Beurteilung, # AV
+           y = KopfODERBauch)) + # UV
+  geom_boxplot(aes(fill = KopfODERBauch)) + # Aufteilung für Legende und das ein Boxplot erstellt werden soll
+  theme_classic()+ # Farbschema
+  labs(y="Entscheidungsbeurteilung", x = "Kopf vs. Bauch")#Labels
+```
+Es gibt einen Unterschied in der zentralen Tendenz. Keine Ausreißer. 
+
+**Hinweis:** Die Boxplot werden unterschiedlich berechnet.  Weierführende Informationen unter: Statistik mit Jule-> Diagramme -> Boxplots
+
+# Ergebnisse des Mann-Whitney-U-Tests
+
+Die Daten werden rangiert und es wird nicht mit dem eigentlichen Beobachtungswert gerechnet, sondern mit dem Rangplatz. Infolgedessen kann es bei doppelter Platz vergabe zu Problem führen. Daher muss zwischen drei Optionen unterschieden werden.   
+
+Grundsätzlich ist zwischen asymptotische Signifikanz oder eine exakte Signifikanz zu unterscheiden. In Abhängigkeit von der Stichprobengrösse wird der eine oder andere Wert berichtet:
+
+
+###  Keine doppelt vorkommenden Daten
+
+** Ist die Stichprobe hinreichend gross (n1 + n2 > 30), so wird die asymptotische Signifikanz verwendet.**
+
+```{r}
+test <- wilcox.test(uebung6$Beurteilung ~  uebung6$KopfODERBauch, exact = FALSE)
+test
+
+```
+
+** Ist dies nicht der Fall, so wird die exakte Signifikanz verwendet.**
+
+```{r}
+test <- wilcox.test(uebung6$Beurteilung ~  uebung6$KopfODERBauch)
+test
+```
+
+###  doppelt vorkommende Daten
+
+```{r}
+# library(exactRankTests) -> Mann-Whitney-U-Tests
+
+test <- wilcox.exact(uebung6$Beurteilung ~  uebung6$KopfODERBauch, data=uebung6, conf.int=T, conf.level =0.95, alternative="two.sided")
+test
+```
+
+**Die Codeausgaben untersuchen eine ungerichtete Hypothesenpaarung.**
+
+
+Es kommen beobachtete Werte doppelt in der Datenerfassung vor, so dass in der zweiten Variante der Hinweis "Bindungen keinen exakten p-Wert berechnen" erfolgt. Daher ist der "exactRankTests" zu empfehlen.
+
+Der Unterschied zwischen den Gruppen ist signifikant (W = 79.5, p = .001786, n = 19).
+
+# Berechnung der Effektstärke
+
+$$r=\left\| \frac{z}{\sqrt{n}} \right\|$$
+
+
+```{r}
+Zstat<-qnorm(test$p.value/2) #Zwert durch zwei, da eine ungerichtete Hypothese verwendet wird. 
+sprintf("Z-Wert für den U-Test : %.2f", Zstat) # sprintf gibt die Daten aus. %.2f rundet nach der zweiten Kommastelle.
+
+daten <- nrow(uebung6) #Wie viele Einträge hat der Datensatz doppelt vorkommende Daten
+daten <- daten - 4 #ohne doppelt vorkommende Daten
+sprintf("Anzahl der Daten: %.f", daten)
+
+eff <- abs(Zstat/sqrt(daten)) # Formel in Betrag
+sprintf("Effektstärke: %.2f", eff)
+```
+
+Zur Beurteilung der Grösse des Effektes dient die Einteilung von Cohen (1992):
+
+$$
+\begin{align}
+\text{Schwacher Effekt: } 0.10 &< ||r|| < 0.30             \\
+\text{Schwacher bis mittlerer Effekt: } 0.30 &= ||r||      \\
+\text{Mittlerer Effekt: } 0.30 &< ||r|| < 0.50             \\
+\text{Mittlerer bis starker Effekt: }0.50 &= ||r||         \\
+\text{Starker Effekt: } 0.50 &< ||r||        
+\end{align}
+$$
+Damit entspricht eine Effektstärke von 0.81 einem starken Effekt.
+
+# Eine Aussage
+
+Bauchentscheidungen (Median = 10,n = 8) weisen einen signifikant höheren / besseren Entscheidungsbeurteilungswert auf als Kopfenscheidungen (Median = 4.5,n = 11) - Mann-Whitney-U-Test (W = 79.5, p = .001786, n = 19). Die Effektstärke nach Cohen (1992) liegt bei r = 81 und entspricht einem starken Effekt. H0 kann verworfen werden.

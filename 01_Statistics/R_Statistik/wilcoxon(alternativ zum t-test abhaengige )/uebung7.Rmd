@@ -1,0 +1,159 @@
+---
+title: "Wilcoxon-Test für abhängige Stichproben"
+output: html_notebook
+---
+
+# Hypothese 
+H1: Der Toleranzschwellwert gegen v ändert sich im Laufe von drei Jahren. $Median_{vorher} \ne Median_{nacher}$
+
+H0: Der Toleranzschwellwert gegen Schmutz ändert sich im Laufe von drei Jahren nicht. $Median_{vorher} = Median_{nachher}$
+
+
+# Voraussetzungen für den Wilcoxon-Test   
+
+Die abhängige Variable ist mindestens ordinalskaliert - erfüllt!
+
+
+Es liegen zwei verbundene Stichproben oder Gruppen vor, aber die verschiedenen Messwertpaare sind voneinander unabhängig (e.g. Paar A und Paar B sind voneinander unabhängig)
+
+1) Es wird dieselbe Person beim Einzug und 3 Jahre nach dem Einzug befragt 
+2) Die Daten sind unabhängig, weil verschiedene Studierende befragt wurden ( A und B sind unabhängig.)
+
+
+
+# Boxplots zur Darstellung der Werte
+
+
+```{r}
+boxplot(uebung7$TUZvorher, uebung7$TUZnachher, main = "Boxplot TUZ",col = c("hotpink3", "deepskyblue"), names = c("(links) Einzug", "(rechts) nach 3 Jahren"), ylab = "TUZ")
+
+```
+
+Die Mediane unterscheiden sich. Der Median für die Var. "TUZvoher" liegt bei 4, der von "TUZnacher bei 6. Es gibt keine Ausreißer und die Daten sehen gut verteilt aus. 
+
+
+# Berechnung der Mediane
+
+
+```{r}
+library(psych)
+zusammenfassung <-describe(uebung7)
+zusammenfassung
+```
+
+
+
+# ALTERNATIV
+
+
+```{r}
+#Median der Var. Vorher und Nachher
+
+sprintf("TUZ vorher: %.2f", median(uebung7$TUZvorher))
+
+sprintf("TUZ nachher: %.2f", median(uebung7$TUZnachher))
+sprintf("Anzahl der Daten: %.f", nrow(uebung7))
+```
+
+Es gibt einen Unterschied in der zentralen Tendenz zwischen zwei Messzeitpunkten. Beim Einzug lag die Toleranzschwelle bei einem Median von 4 nach 3 Jahren bei 6 (n=12).
+
+
+# Ergebnisse des Wilcoxon-Tests
+
+### Ist die Stichprobe hinreichend gross (n > 20), so ist der kritische Wert asymptotisch normalverteilt.
+```{r}
+
+test<- wilcox.test(uebung7$TUZvorher, uebung7$TUZnachher,alternative = "two.sided",paired = TRUE, exact = FALSE)
+test
+
+```
+
+### Ist dies nicht der Fall, so wird die exakte Signifikanz verwendet.
+
+```{r}
+
+test<- wilcox.test(uebung7$TUZvorher, uebung7$TUZnachher,alternative = "two.sided",paired = TRUE, exact = TRUE)
+test
+
+```
+
+
+### doppelt vorkommende Daten
+
+"kann bei Bindungen keinen exakten p-Wert Berechnen, kann den exakten p-Wert bei Nullen nicht berechnen"-  Da in diesem Datensatz die Rangierung doppelt vorkommen, kann kein exakter p-Wert berechnet werden.
+
+
+
+# Exakter Test wegen sehr kleiner Stichprobe n=12
+
+```{r}
+library(exactRankTests)
+test<- wilcox.exact(uebung7$TUZvorher, uebung7$TUZnachher,alternative = "two.sided",paired = TRUE, exact = TRUE)
+test
+```
+Die Teststatistik beträgt V = 2 und der zugehörige Signifikanzwert p = 0.007812. Damit ist der Unterschied signifikant: Die zentralen Tendenzen der beiden Messzeitpunkte unterscheiden sich (Wilcoxon-Test: V = 2, p = 0.007812, n = 12).
+
+### mit der library(coin)
+
+
+```{r}
+library(coin)
+test<- wilcox.exact(uebung7$TUZvorher, uebung7$TUZnachher,alternative = "two.sided",paired = TRUE, exact = TRUE)
+test
+```
+Es gibt keine Unterschiede in der Darstellung oder Berechnung. 
+
+
+
+# Berechnung der Effektstärke
+
+
+$$r=\left| \frac{z}{\sqrt{n}} \right|$$
+
+
+
+### Der z - Wert
+```{r}
+
+Zstat1<-qnorm(test$p.value/2)
+
+sprintf("Z-Wert für den WSR: %.2f", Zstat1)
+
+```
+*Hinweis:* Bei diesem z-Wert handelt es sich um das z-empirisch.
+
+### Anzahl der Daten aus dem Datensatz
+```{r}
+nk<-nrow(uebung7[uebung7$TUZvorher!=uebung7$TUZnachher,])
+sprintf("Anzahl ohne Null: %.f", nk)
+```
+
+Die Anzahl kann auch unter Datenmartix ausgelesen werden. In dem vorliegenden Beispiel sind es 10 Datensätze.
+
+```{r} 
+# absoluter Wert -> Betrag
+eff <-abs(Zstat1)/sqrt(nk)
+sprintf("Effektstärke: %.2f", eff)
+
+```
+
+Zur Beurteilung der Grösse des Effektes dient die Einteilung von Cohen (1988):
+
+$$
+\begin{align}
+\text{Schwacher Effekt: } 0.10 &< ||r|| < 0.25             \\
+\text{Schwacher bis mittlerer Effekt: } 0.25 &= ||r||      \\
+\text{Mittlerer Effekt: } 0.25 &< ||r|| < 0.40             \\
+\text{Mittlerer bis starker Effekt: }0.40 &= ||r||         \\
+\text{Starker Effekt: } 0.40 &< ||r||        
+\end{align}
+$$
+
+Damit entspricht die Effektstärke von .84 einem starken Effekt.
+
+# Eine Aussage
+
+Die Toleranzschwelle steigt nach 3 Jahren im Wohnheim an (V = 2, p-value = 0.007812, n=12). Beim Einzug liegt der Median für die Toleranz gegen Schutz und Dreck bei 4 nach 3 Jahren bei 6, sprich die Studierenden werden toleranter gegenüber Schmutz und Dreck. Die Effektstärke nach Cohen (1988) liegt bei r = .84 und entspricht einem starken Effekt.
+
+H0 kann verworfen werden.
+

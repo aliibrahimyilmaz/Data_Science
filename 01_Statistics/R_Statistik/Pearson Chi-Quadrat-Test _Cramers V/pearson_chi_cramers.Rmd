@@ -1,0 +1,329 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Pearson Chi-Quadrat-Test | Cramers V#
+
+# A. Aufgabe: Der Chi-Quadrat-Test mit R | Cramers´V OHNE ANPASSUNG
+
+Eine Studie untersucht, ob sich die Studierendenbereitschaft nach einem Auslandjahr sich verändert. Vor dem Auslandjahr wurde die Studieninteressierte befragt, bzw. nach dem Auslandjahr. Jetzt stellt sich die Frage: Gibt es einen Zusammenhang zwischen vor und nach dem Ausjahrs in Punkto der Studienbereitschaft?
+
+Der zu analysierende Datensatz enthält neben einer Befragtennummer (ID), (Studierbereitschaft vorher), (Studierbereitschaft nachher).
+
+## 1. Hypothese:
+
+H1: Es gibt einen Zusammmenhang zwischen der Studierbereitschaft vor dem Auslandsjahr und der Studierbereitschaft nach dem Auslandsjahr.
+
+H0: Es gibt keinen Zusammmenhang zwischen der Studierbereitschaft vor dem Auslandsjahr und der Studierbereitschaft nach dem Auslandsjahr.
+
+## 2. Voraussetzungen:
+
+Die Variablen sind kategorial (nominal- oder ordinalskaliert)
+
+### 2.1. Datensatz:
+
+```{r}
+library(readxl)
+chi <- read_xlsx("chi.xlsx")
+chi
+```
+
+
+## 3. Balkendiagramm:
+
+```{r}
+counts <- table(chi$vorher, by = chi$nachher)
+
+barplot(counts, main="Balkendiagramm zur Studierbereitschaft", col=c("deepskyblue","tomato"),
+        ylab="Anzahl Personen", xlab = "Studierbereitschaft", beside=T,
+        names.arg =c("VorH-NachH","VorN-NachH","VorH-NachN", "VorN-NachN"))
+```
+
+## 4. Kreuztabelle:
+
+
+```{r}
+counts
+```
+
+
+```{r}
+counts<- table(Vorher = chi$vorher, nachher = chi$nachher)
+print("beobachtete Werte ")
+print(counts)
+```
+Die Tabelle wurde angelegt.
+
+
+## 5. Erwarteten Werte:
+
+```{r}
+ch <- chisq.test(counts, correct = F)
+print("Erwartete Werte ")
+ch
+```
+```{r}
+round(ch$expected, 2)
+```
+
+Die beobachteten und die erwarteten Werte wurden verglichen. Es zeigen sich für das Beispiel einen Unterschiede. Ob es jedoch signifikant sind, wird mittels Chi-Quadrat-Test geprüft.
+
+## 6. X²: 
+
+$$\chi^2 = \sum^I_{i=1}\sum^J_{j=1}\frac{(f_{ij}-f^{'}_{ij})^2}{f^{'}_{ij}}$$
+
+```{r}
+ch <- chisq.test(counts, correct = F)
+ch 
+```
+
+Der Test bestätigt, dass ein Zusammenhang zwischen Studierbereitschaft vor der Auslandsjahr und die Studierbereitschaft nach denm Auslandsjahr besteht (Chi-Quadrat(1) = 8.7615, p = .003077).
+
+## 7. Cramers ´V :
+
+** Die Zahl 2 steht für 2×2 Design.**
+
+```{r}
+anzahl <- nrow(chi)
+
+sprintf("Der Datensatz hat %d Zeilen.",anzahl)
+```
+```{r}
+cramersV <- sqrt(( ch$statistic)/(anzahl*(2-1)))
+sprintf("Die Effektstärke liegt bei %.2f.", cramersV)
+```
+Cramer s V ist immer positiv. Es wird keine Aussage über die Richtung des Zusammenhangs gemacht.
+
+Es zeigt sich für unsere Auswertung, dass ein mittlerer Zusammenhang besteht.
+
+## 8. Aussage:
+
+Die Studierbereitschaft vor dem Auslandsjahr und die Studierbereitschaft nach dem Auslandsjahr stehen in einem Zusammenhang (Chi-Quadrat(1) = 8.7615 p = .003077, n= 45). Der Zusammenhang ist mittlerer (Cramers V = .44). Damit kann die H0 verworfen werden.
+
+
+
+
+# B. Aufgabe: Der Chi-Quadrat-Test mit R | Cramers´V MIT ANPASSUNG:
+
+## 1. Hypothese:
+
+H1: Es gibt einen Zusammmenhang zwischen der Studierbereitschaft vor dem Auslandsjahr und der Studierbereitschaft nach dem Auslandsjahr.
+
+H0: Es gibt keinen Zusammmenhang zwischen der Studierbereitschaft vor dem Auslandsjahr und der Studierbereitschaft nach dem Auslandsjahr.
+
+## 2. Vorausetzungen:
+
+Die Variablen sind kategorial (nominal- oder ordinalskaliert)
+
+** Datensatzgröße**
+
+1. Die Stichprobe ist > 50.
+
+2. Ist dies nicht der Fall, so wird bei einer Stichprobe kleiner als 20 der exakte Test nach Fisher verwendet
+
+3. bei einer Stichprobengröße zwischen 20 und 50 die Korrektur nach Yates.
+
+|Fall |Fisher|Yates|
+|-------|------|-----|
+|Fall 1 |- |- |
+|Fall 2 |- |+ |
+|Fall 3 |+ |- |
+|Fall 4 |+ |+ |
+
+#### Die erwarteten Zellhäufigkeiten sind > 5. Ist dies nicht der Fall, so wird der exakte Test nach Fisher verwendet.
+
+#### Die Freiheitsgrade des Chi-Quadrat-Tests sind größer als 1. Ist dies nicht der Fall, so wird die Korrektur nach Yates verwendet.
+
+### 2.1. Datensatz:
+
+```{r}
+head(chi, 5)
+```
+
+## 3. Balkendiagramm:
+
+```{r}
+counts<- table(Vorher= chi$vorher, Nachher = chi$nachher)
+
+barplot(counts, main="Balkendiagramm zur Studierbereitschaft", col=c("deepskyblue","tomato"),
+        ylab="Anzahl Personen", xlab = "Studierbereitschaft", beside=T,
+        names.arg =c("VorH-NachH","VorN-NachH","VorH-NachN", "VorN-NachN"), legend = rownames(counts),       
+        args.legend = list(x = "topright"))
+```
+
+## 4. Kreuztabelle und Beobachteten Werte:
+
+```{r}
+counts<- table( Vorher =chi$vorher, Nachher = chi$nachher)
+head(counts)
+```
+
+Die Tabelle wurde angelegt.
+
+## 5. Erwarteten Werte:
+
+```{r}
+ch <- chisq.test(counts, correct = F)
+round(ch$expected, 2)
+```
+
+Die beobachteten und die erwarteten Werte wurden verglichen. Es zeigen sich für das Beispiel einen Unterschiede. Ob es jedoch signifikant sind, wird mittels Chi-Quadrat-Test geprüft.
+
+## 6. Ergebnis zum X² und Prüfung der Signifikanz:
+
+### 1) Die Stichprobe ist > 50.
+
+```{r}
+ch <- chisq.test(counts, correct = F)
+ch 
+```
+Bericht:(Chi-Quadrat(1) = 8.7615, p = .003077)
+
+### 2) Ist dies nicht der Fall, so wird bei einer Stichprobe kleiner als 20 der exakte Test nach Fisher verwendet.
+
+```{r}
+ch <- chisq.test(counts, correct = F)
+ch
+```
+```{r}
+fisher.test(counts)
+```
+Bericht:(Chi-Quadrat(1) = 8.7615, p = .005673)
+
+### 3) bei einer Stichprobengröße zwischen 20 und 50 die Korrektur nach Yates.
+
+```{r}
+ch <- chisq.test(counts, correct = TRUE)
+ch 
+```
+Bericht:(Chi-Quadrat(1) = 6.8563, p = .008833)
+
+#### Die erwarteten Zellhäufigkeiten sind > 5. Ist dies nicht der Fall, so wird der exakte Test nach Fisher verwendet.
+
+#### Die Freiheitsgrade des Chi-Quadrat-Tests sind größer als 1. Ist dies nicht der Fall, so wird die Korrektur nach Yates verwendet.
+
+In dieser Übung ist es notwending nach Fisher und nach Yates zu korregieren. Daher wird folgender Code verwendet.
+
+```{r}
+ch <- chisq.test(counts, correct = TRUE)
+ch 
+```
+```{r}
+fisher.test(counts)
+```
+
+Hinweise: Da in dieser Übungsaufgabe der exakte Test nach Fisher verwendet werden muss, wird nicht folgender p-value = 0.008833 zitiert, sondern Fisher mit einem p-value von 0.005673.
+
+Der Test bestätigt, dass ein Zusammenhang zwischen Studierbereitschaft vor dem Auslandsjahr und die Studierbereitschaft nach dem Auslandsjahr besteht (Chi-Quadrat(1) = 6.8563, p = .005673).
+
+## 7. Cramers ´V:
+
+```{r}
+anzahl <- nrow(chi)
+
+sprintf("Der Datensatz hat %d Zeilen.",anzahl)
+```
+
+```{r}
+sprintf("Das Chi-Quadrat liegt bei %.2f.",ch$statistic)
+```
+
+```{r}
+cramersV <- sqrt(( ch$statistic)/(anzahl*(2-1)))
+sprintf("Die Effektstärke liegt bei %.2f.",cramersV)
+```
+
+Cramer s V ist immer positiv -> keine Aussage über die Richtung des Zusammenhangs
+
+Es zeigt sich für unsere Auswertung, dass ein mittlerer Zusammenhang besteht.
+
+## 8. Aussage:
+
+Die Studierbereitschaft vor dem Auslandsjahr und die Studierbereitschaft nach dem Auslandsjahr stehen in einem Zusammenhang (Chi-Quadrat(1) = 6.8563, p = .005673, n= 45). Der Zusammenhang ist mittelstark (Cramers V = .4). Damit kann die H0 verworfen werden.
+
+
+# HINWEIS FUR ANPASSUNG:
+
+** Datensatzgröße**
+
+1. Die Stichprobe ist > 50.
+
+2. Ist dies nicht der Fall, so wird bei einer Stichprobe kleiner als 20 der exakte Test nach Fisher verwendet
+
+3. bei einer Stichprobengröße zwischen 20 und 50 die Korrektur nach Yates.
+
+|Fall |Fisher|Yates|
+|-------|------|-----|
+|Fall 1 |- |- |
+|Fall 2 |- |+ |
+|Fall 3 |+ |- |
+|Fall 4 |+ |+ |
+
+### Fall 1
+
+$$\chi^2 = \sum^I_{i=1}\sum^J_{j=1}\frac{(f_{ij}-f^{'}_{ij})^2}{f^{'}_{ij}}$$
+
+**keine Anpassung erforderlich**
+
+```{r message=FALSE, warning=FALSE}
+
+ch <- chisq.test(counts, correct = F) # correct = F ohne Anpassungen - die "normale" Formel
+ch 
+
+```
+**Bericht:**(Chi-Quadrat(1) = 8.7615, p = .003077)
+
+
+### Fall 2 
+
+**Anpassung: Korrektur nach Yates ** 
+
+$$
+\chi^2 = \sum^I_{i=1}\sum^J_{j=1}\frac{(\Bigl| f_{ij}-f^{'}_{ij}\Bigl| -0.5)^2}{f^{'}_{ij}}
+$$
+
+
+```{r message=FALSE, warning=FALSE}
+ch <- chisq.test(counts, correct = TRUE) # Die Anpassung nach Yates - correct = TRUE - Die Formel wird um -0.5 erweietert
+ch 
+
+``` 
+**Bericht:**(Chi-Quadrat(1) = 6.8563, p = .008833)
+
+
+### Fall 3 
+
+**Anpassung: Fisher's Exact Test ** 
+
+
+```{r message=FALSE, warning=FALSE}
+ch <- chisq.test(counts, correct = F)
+ch 
+fisher.test(counts)
+
+``` 
+**Bericht:**(Chi-Quadrat(1) = 8.7615, p = .005673)
+
+### Fall 4 
+
+**Anpassung: Fisher's Exact Test & Anpassung nach Yates ** 
+
+**3) bei einer Stichprobengröße zwischen 20 und 50 die Korrektur nach Yates.**
+
+*Die erwarteten Zellhäufigkeiten sind > 5. Ist dies nicht der Fall, so wird der exakte Test nach Fisher verwendet.**
+
+**Die Freiheitsgrade des Chi-Quadrat-Tests sind größer als 1. Ist dies nicht der Fall, so wird die Korrektur nach Yates verwendet.**
+
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+ch <- chisq.test(counts, correct = TRUE)
+ch 
+fisher.test(counts)
+
+```
+
+**Hinweise**: Da in dieser Übungsaufgabe der exakte Test nach Fisher verwendet werden muss, wird nicht folgender **p-value = 0.008833** zitiert, sondern Fisher mit einem p-value von **0.005673**.
+
+Der Test bestätigt, dass ein Zusammenhang zwischen Studierbereitschaft vor dem Auslandsjahr und die Studierbereitschaft nach dem Auslandsjahr besteht (Chi-Quadrat(1) = 6.8563, p = .005673).

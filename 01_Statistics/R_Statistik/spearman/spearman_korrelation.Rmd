@@ -1,0 +1,95 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# SPEARMAN KORRELATION:
+Ein Messinstrument soll untersuchen, ob die Einkommen(in 1000 Euro) Einfluss auf unser Shoppingverhalten (Shopping pro Monat) hat. Das Einkommen wird in Bruttoeinkommen pro Jahr erhoben. Das Shoppingverhalten wurde über einen Jahr erhoben.
+
+Der zu analysierende Datensatz enthält zu Beginn neben der Probandennummer (Proband) die Variablen Einkommen.in.1000.Euro und Shoppingverhalten.pro.Monat.
+
+# 1) Hypothese 
+(ungerichtet)
+H1: Es gibt einen Zusammenhang zwischen Shopping und Einkommen in 1000 Euro.
+
+H0: Es gibt keinen Zusammenhang zwischen Shopping und Einkommen in 1000 Euro.
+
+# 2) Voraussetzungen
+
+Die Variablen sind mindestens ordinalskaliert. <- liegt vor.
+```{r}
+spearman$Einkommen
+```
+```{r}
+spearman$Shopping
+```
+# 3) Grundlegende Konzepte: Was ist Spearman?
+Die Rangkorrelationsanalyse nach Spearman berechnet den linearen Zusammenhang zweier mindestens ordinalskalierter Variablen.
+Da stets der Zusammenhang zwischen zwei Variablen untersucht wird, wird von einem "bivariaten Zusammenhang" gesprochen.
+
+# 4) Grafische Veranschaulichung des Zusammenhangs
+
+Um visuell zu prüfen, ob ein linearer Zusammenhang vorliegen könnte, empfiehlt es sich vorab ein Streudiagramm erstellen.
+
+```{r}
+plot(spearman$Einkommen~ spearman$Shopping, main = "Streudiagramm zwischen Shppping und Einkommen", xlab = "Shopping pro Monat", ylab= "Einkommen in 1000 Euro pro  Jahr Brutto")
+abline(lm(spearman$Einkommen ~ spearman$Shopping, data = spearman), col="red")
+```
+
+Das Streudiagramm in Abbildung zeigt eine tendenziell positive lineare Beziehung zwischen den beiden Variablen. Das heisst, die beiden Variablen korrelieren vermutlich. Da die Korrelationsanalyse einen ungerichteten Zusammenhang untersucht, lässt er sich auf zwei Weisen ausformulieren: Je höher der Shoppingverhalten, desto höher das Einkommen; oder Je höher das Einkommen, desto höher das Shoppingverhalten.
+
+# 5) Deskriptive Statistik
+
+Für die deskriptive Statistik empfiehlt es sich das Package “psych” zu verwenden.
+
+```{r}
+library(psych)
+```
+
+```{r}
+describe(spearman)
+```
+
+Für die deskriptive Auswertung schauen wir den Median und die Anzahl der Daten an. Die Teilnehmer dieser Stichprobe sind 4.35 pro Monat shoppen (N= 12) gewesen und verdienen Brutto pro Jahr 59.000 Euro (N = 12).
+
+# 6) Ergebnisse der Korrelationsanalyse
+
+```{r}
+test <- cor.test(spearman$Einkommen, spearman$Shopping, method = "spearman")
+test
+```
+Der R-Output in Abbildung gibt den Korrelationskoeffizienten sowie den p-Wert (Signifikanz) wieder. Es wird ersichtlich, dass ein Zusammenhang vorliegt zwischen Shopping und Einkommen (r = .6433 p = .0279, n = 12). Da r einen positiven Wert aufweist, kann von einem positiven linearen und signifikanter Zusammenhang zwischen Shopping und Einkommen ausgegangen werden. Das bedeutet: Je höher das Einkommen, desto öfters gehen die Teilnehmer shoppen.
+
+Hinweis: Aus der deskriptive Statistik kannst die Anzahl der Datensatze entnehmen.
+
+# 7) Berechnung des Bestimmtheitsmasses
+
+Aus der Korrelation lässt sich durch Quadrieren das Bestimmtheitsmass berechnen:
+
+```{r}
+rbestimmt <- (test$estimate ^2) *100
+sprintf("Das Bestimmtheitsmaß liegt bei %.2f %%.", rbestimmt)
+```
+Wird dieser Wert mit 100 multipliziert, so ergibt sich ein Prozentwert. Dieser gibt an, welcher Anteil der Varianz in beiden Variablen durch gemeinsame Varianzanteile determiniert wird. Für das vorliegende Beispiel beträgt der Anteil der gemeinsamen Varianz 41.39%.
+
+# 8) Berechnung der Effektstärke
+
+Um die Bedeutsamkeit eines Ergebnisses zu beurteilen, werden Effektstärken berechnet. Im Beispiel ist die Korrelation der beiden Variablen signifikant, doch es stellt sich die Frage, ob der Zusammenhang gross genug ist, um ihn als bedeutend einzustufen. Der Korrelationskoeffizient r von Spearman ist ein Mass für die Effektstärke.
+
+Um zu bestimmen, wie gross der gefundene Zusammenhang ist, kann man sich an der Einteilung von Cohen (1992) orientieren:
+$$
+\begin{align}
+\text{Schwacher Effekt: } 0.10 &< ||r|| < 0.30 \\
+\text{Schwacher bis mittlerer Effekt: } 0.30 &= ||r|| \\
+\text{Mittlerer Effekt: } 0.30 &< ||r|| < 0.50 \\
+\text{Mittlerer bis starker Effekt: }0.50 &= ||r|| \\
+\text{Starker Effekt: } 0.50 &< ||r|| 
+\end{align}
+$$
+```{r}
+sprintf("Die Effektstärke liegt bei %.3f.", test$estimate)
+```
+Damit entspricht ein Korrelationskoeffizient von .6433 einem starken Effekt.
+
+# 9) Eine Aussage
+
+Der Shopping und der Einkommen korrelieren signifikant (r = .6433 p = .0279, n = 12). Je höher das Einkommen, desto ofters waren die Teilnehmer shoppen. 41.39% der Streuung der gemeinsamen Varianz kann durch Shopping und Einkommen erklärt werden. Dabei handelt es sich nach Cohen (1992) um einen starken Effekt. H0 kann verworfen werden.

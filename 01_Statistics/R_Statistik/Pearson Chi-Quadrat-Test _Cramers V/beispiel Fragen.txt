@@ -1,0 +1,11 @@
+- Gibt es einen Zusammenhang zwischen Musikstil und Präferenz des Automodells?
+- Wer (Kinder, Jugendliche, Erwachsene, Senioren) isst häufiger Döner (0-5 pro Jahr, 6-10 pro Jahr, 11+ pro Jahr)
+- Gibt es einen Zusammenhang zwischen dem Verzehr von Süßigkeiten (keine, wenig, viel) und vorkommendem Übergewicht bei Grundschülern?
+- Welcher Käse schmeckt auf welchem Brot am besten?
+- Gibt es einen Zusammenhang zwischen dem Geschlecht und Spielen Fußball?
+- Besuchen mehr Frauen oder Männer Ingolstadt Village für Weihnachtsgeschenk?
+- Gibt es einen Zusammenhang zwischen Berufsgruppe und der Wahl einer Partei?
+- Hören Hunde besser auf ihren Namen, nachdem sie in einem Training Hundekekse, Streicheleinheiten oder ausschliesslich verbales Lob erhalten haben?
+- Welchen Musikstil bevorzugen verschiedene Altersgruppen?
+- Gibt es einen Zusammenhang zwischen der Parteipräferenz und dem Abstimmungsverhalten?
+- Gibt es einen Zusammenhang zwischen dem Gesundheitsstatus (gesund, leichte Erkrankung, schwere - Erkrankung, chronische Erkrankung) und dem gewählten Krankenkassenmodell?

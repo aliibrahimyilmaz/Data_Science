@@ -4,6 +4,7 @@ output: html_notebook
 ---
 ### DAS THEMA: AUFGABE-2, Korrelation nach Bravais-Pearson (Metrisch x Metrisch)
 Beschreibung
+https://alfatraining.wawerda.de/quiz/pearson.html
 
 Im Rahmen einer Studie wurden Hauskatzen untersucht, dazu wurde das Gewicht der Katzen, sowie deren Herzgewicht erhoben. Es soll untersucht, ob es einen Zusammenhang zwischen dem Herzgewicht und dem Körpergewicht der Katzen besteht.
 
@@ -15,6 +16,8 @@ data
 
 # Aufgabenstellung
 # 1) Hypothese
+ungerichtete Hypothese
+
 H1: Es gibt einen Zusammenhang zwischen dem Herzgewicht und dem Körpergewicht der Katzen.
 
 H0: Es gibt keinen Zusammenhang zwischen dem Herzgewicht und dem Körpergewicht der Katzen.
@@ -109,6 +112,15 @@ Wird dieser Wert mit 100 multipliziert, so ergibt sich ein Prozentwert. Dieser g
 # 8) Berechnung der Effektstärke
 
 Um zu bestimmen, wie gross der gefundene Zusammenhang ist, kann man sich an der Einteilung von Cohen (1992) orientieren:
+$$
+\begin{align}
+\text{Schwacher Effekt: } 0.10 &< ||r|| < 0.30 \\
+\text{Schwacher bis mittlerer Effekt: } 0.30 &= ||r|| \\
+\text{Mittlerer Effekt: } 0.30 &< ||r|| < 0.50 \\
+\text{Mittlerer bis starker Effekt: }0.50 &= ||r|| \\
+\text{Starker Effekt: } 0.50 &< ||r|| 
+\end{align}
+$$
 
 ```{r}
 sprintf("Die Effektstärke liegt bei %.4f.",test$estimate)

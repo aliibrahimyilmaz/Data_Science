@@ -1,0 +1,251 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# DoE : Design of Experiment
+
+# Aufgabe 1:
+
+A: Strecke zur Arbeit: Bahnhof Ost (-) | Hauptbahnhof(+)
+B: Zeitpunkt: früh(-) | später(+)
+
+# 2²-Versuchsaufbau
+
+A |B |AXB |Fahrzeit
+--|--|----|--------
+- |- |+ |40
++ |- |- |46
+- |+ |- |42
++ |+ |+ |50
+
+```{r}
+Strecke <- c("Bahnhof Ost", "Hauptbahnhof", "Bahnhof Ost", "Hauptbahnhof")
+Zeitpunkt <- c("frueh", "frueh", "spaeter", "spaeter")
+Fahrzeit <- c(40, 46, 42, 50)
+aufgabe <- data.frame(Strecke,Zeitpunkt,Fahrzeit)
+aufgabe
+```
+
+```{r}
+# Hauptfaktor A
+negA <- (40+42)/2
+posA <- (46+50)/2
+DIFA <- posA-negA
+
+# Hauptfaktor B
+negB <- (40+46)/2
+posB <- (42+50)/2
+DIFB <- posB-negB
+
+# Interaktion
+Interaktion <- (40-46-42+50)/2
+sprintf("--- Haupffaktor A---")
+sprintf("negA: %f",negA)
+sprintf("posA: %f",posA)
+sprintf("DIFA: %f",DIFA)
+
+sprintf("--- Haupffaktor B---")
+sprintf("negA: %f",negB)
+sprintf("posA: %f",posB)
+sprintf("DIFA: %f",DIFB)
+
+sprintf("--- Interaktion AxB ---")
+sprintf("negB: %f",Interaktion)
+```
+
+```{r}
+library(psych)
+```
+
+```{r}
+descUV1<-describeBy(aufgabe$Fahrzeit, group= aufgabe$Strecke, mat = T)
+descUV2<-describeBy(aufgabe$Fahrzeit, group= aufgabe$Zeitpunkt, mat = T)
+
+Mittelwertsausgabe <- rbind(Strecke=descUV1, Zeitpunkt=descUV2)
+Mittelwertsausgabe
+```
+
+
+```{r}
+summary(aov(aufgabe$Fahrzeit ~ aufgabe$Strecke+aufgabe$Zeitpunkt))
+```
+
+es zeigt sich ein Trend, dass die Fahrzeit kürzer ausfällt, wenn Mann oder Frau vom Bahnhof Ost abfährt (F(1, 49)= 49, p= .09). Der Zeitpunkt der Abfahrt zeigt wiederum einen etwas geringeren Einfluss mit p = 0.2. 
+
+### Faktor A
+```{r}
+interaction.plot(aufgabe$Strecke, aufgabe$Zeitpunkt, aufgabe$Fahrzeit,
+                 main = "Interaktionsplot",
+                 ylab = "Fahrzeit in Minuten",
+                 xlab = "Strecke",
+                 trace.label= "Zeitpunkt",
+                 ylim = c(37,52)
+                 )
+```
+Der Haupteffekt A ist global interpretierbar. Die Graphen der beiden Faktorstufen “Bahnhof Ost” und “Hauptbahnhof” weisen in die gleiche Richtung. Die Fahrzeit ist immer kürzer, wenn Mann oder Frau früher losfährt als später.
+
+
+### Faktor B
+
+```{r}
+interaction.plot(aufgabe$Zeitpunkt, aufgabe$Strecke, aufgabe$Fahrzeit,
+                main = "Interaktionsplot", 
+                ylab = "Fahrzeit in Minuten", 
+                xlab= "Zeitpunkt", 
+                trace.label = "Strecke", 
+                ylim = c(37,52)
+
+                )
+```
+
+Der Haupteffekt B ist global interpretierbar. Die Graphen der beiden Faktorstufen “früh” oder “spät” weisen in die gleiche Richtung. Der Ostbahnhof hat immer die kürzere Fahrtzeit als der Hauptbahnhof.
+
+## Zusammmenfassung
+
+Beide Haupteffekte sind sinnvoll interpretierbar.
+
+
+### Interaktion
+
+```{r}
+summary(aov(aufgabe$Fahrzeit ~ aufgabe$Strecke*aufgabe$Zeitpunkt))
+```
+
+Keine sinnvolle Interpretation! - eine Minute könnte im Schnitt eingespart werden.
+
+
+# Aufgabe 2:
+
+### Beschreibung
+
+Es soll untersucht werden, von welchen Faktoren das Erinnerungsvermögen abhängt. Hierzu wurde Personen eine Liste mit 20 dreisilbigen Wörtern vorgelegt oder vorgelesen. Danach hatten die Personen drei Minuten Zeit, alle Wörter aufzuschreiben, die sie sich gemerkt hatten. Es werden die folgenden drei Faktoren betrachte
+
+
+A: Geschlecht: Männlein (-)| Weiblein (+)
+B: Alter: jung(-)| älter(+) 
+C: Darstellung: vorgelesen(-)| lesen(+)
+
+| A | B | C | AxB | AxC | BxC | AxBxC | Erinnerungsvermoegen 
+|---|---|---|-----|-----|-----|-------|----------------------
+| - | - | - | + | + | + | - | 9
+| + | - | - | - | - | + | + | 9
+| - | + | - | - | + | - | + | 5
+| + | + | - | + | - | - | - | 7
+| - | - | + | + | - | - | + | 10
+| + | - | + | - | + | - | - | 14
+| - | + | + | - | - | + | - | 12
+| + | + | + | + | + | + | + | 10
+
+
+```{r}
+Anzahl <- Erinnerungsvermoegen <- c(9,9,5,7,10,14,12,10)
+A <- Geschlecht <- factor(c(-1,1,-1,1,-1,1,-1,1))
+B <- Alter <- factor(c(-1,-1,1,1,-1,-1,1,1))
+C <- Darstellung <- factor(c(-1,-1,-1,-1,1,1,1,1))
+
+aufgabe2 <- data.frame(Geschlecht, Alter, Darstellung, Erinnerungsvermoegen)
+head(aufgabe2,8)
+```
+
+### Mittelwerte Geschlecht
+
+```{r}
+library(dplyr)
+
+aufgabe2 %>%
+group_by(Geschlecht) %>%
+summarize(Anzahl = n(), Mittelwert = mean(Erinnerungsvermoegen), Median = median(Erinnerungsvermoegen), SD = sd(Erinnerungsvermoegen)) %>%
+  mutate_if(is.numeric, round, 3)
+```
+
+Es zeichnet sich eher kein Untershied ab. Frauen können sich im Schnitt 10 Wörter merken (SD= 2,9, n = 4) - Männer 9 Wörter (SD=2.9, n=4).
+
+### Mittelwerte - Alter
+
+```{r}
+aufgabe2 %>%
+group_by(Alter) %>%
+summarize(Anzahl = n(), Mittelwert = mean(Erinnerungsvermoegen), Median = median(Erinnerungsvermoegen), SD = sd(Erinnerungsvermoegen)) %>%
+  mutate_if(is.numeric, round, 3)
+```
+
+Es zeichnet sich ein Potenzial für einen Unterschied ab. Jüngere können sich im Schnitt 10.5 Wörter merken (SD= 2,3, n= 4) - ältere 8.5 Wörter (SD= 3.1, n= 4).
+
+### Mittelwerte - Darstellung
+
+Darstellung: vorgelesen(-)|lesen(+)
+
+```{r}
+aufgabe2 %>%
+group_by(Darstellung) %>%
+summarize(Anzahl = n(), Mittelwert = mean(Erinnerungsvermoegen), Median = median(Erinnerungsvermoegen), SD = sd(Erinnerungsvermoegen)) %>%
+  mutate_if(is.numeric, round, 3)
+```
+
+Es zeichnet sich ein Unterschied ab. "Selber lesen" führt zu einer durschschnittlich Merkfähigkeit von 11.5 Wörter (SD= 1.9, n= 4) - "vorgelesen" zu einer Anzahl im Schnitt von 7.5 Wörter (SD= 1.9, n= 4).
+
+### GeschlechtxDartstellung - Interaktion AxC
+
+```{r}
+
+aufgabe2 %>%
+group_by(Geschlecht, Darstellung) %>%
+summarize(Anzahl = n(), Mittelwert = mean(Erinnerungsvermoegen), Median = median(Erinnerungsvermoegen), Standardabweichung = sd(Erinnerungsvermoegen)) %>%
+mutate_if(is.numeric, round, 3)
+```
+eher kein Unterschied beim Geschlecht in der Interaktion
+
+### AlterxDartstellung - Interaktion BxC
+
+```{r}
+
+aufgabe2 %>%
+group_by(Alter, Darstellung) %>%
+summarize(Anzahl = n(), Mittelwert = mean(Erinnerungsvermoegen), Median = median(Erinnerungsvermoegen), Standardabweichung = sd(Erinnerungsvermoegen)) %>%
+mutate_if(is.numeric, round, 3)
+```
+
+Es könnte einen Unterschied in der Interaktion zu geben, diese ist aber nicht sehr deutlich. 
+
+
+
+### GeschlechtxAlter - Interaktion AxB
+```{r}
+library(dplyr)
+aufgabe2 %>%
+group_by(Geschlecht, Alter) %>%
+summarize(Anzahl = n(), Mittelwert = mean(Erinnerungsvermoegen), Median = median(Erinnerungsvermoegen), Standardabweichung = sd(Erinnerungsvermoegen)) %>%
+mutate_if(is.numeric, round, 3)
+```
+
+
+Wenn nur ein unterschied im Alter. Die Interaktion sieht ehr schwierig aus. 
+
+
+### Interaktion AxBxC - Alter x Geschlecht x Darstellung
+
+```{r}
+library(dplyr)
+aufgabe2 %>%
+group_by(Geschlecht, Alter, Darstellung) %>%
+summarize(Anzahl = n(), Mittelwert = mean(Erinnerungsvermoegen), Median = median(Erinnerungsvermoegen), Standardabweichung = sd(Erinnerungsvermoegen)) %>%
+mutate_if(is.numeric, round, 3)
+```
+
+
+
+## Summary 
+
+A = Geschlecht 
+B = Alter 
+C = Darstellung
+
+### ohne Interaktion
+
+```{r}
+summary(aov (Erinnerungsvermoegen ~ A+B+C))
+```
+
+
+Es zeigt sich ein deutlicher Unterschied in der Erinnerungsfähigkeit der Teilnehmer, wenn die Begriffe vorgelesen oder selber gelesen werden können (F(1,4) = 10.667, p= 0.03). Das Alter scheint wiederum auch von Bedeutung zu sein, da sich hier eine leichte Entwicklung abzeichnet (F(1,4) = 2.667, p = 0.17). Das Geschlecht spielt augenscheinlich keine Rolle (p = .46).
+

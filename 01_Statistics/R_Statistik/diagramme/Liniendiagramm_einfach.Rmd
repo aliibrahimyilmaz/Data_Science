@@ -1,0 +1,40 @@
+---
+title: "Einfache Liniendiagramme"
+output: html_notebook
+---
+
+```{r}
+daten = data.frame(
+  kw = c(12:17),
+  v1 = c(1500,1200,1800,1250,1400,1350),
+  v2 = c(2200,2200,2150,1500,800,750)
+)
+
+plot(daten$kw, daten$v1,          # Daten 
+     xlab = "KW",                 # X-Achse-Bezeichnung
+     ylab = "Umsatz [€]",         # y-Achse-Bezeichnung
+     col = "red",                 # Farbe
+     pch = 2,                     # Form
+     type = "b",                  # Darstellungsart
+     lty = 1,                     # Linienart
+     ylim = c(0,2500),            # Bereich der y-Achse
+)
+
+lines(daten$kw, daten$v2,         # Weitere Linie + Daten
+      type = "b",                 # Darstellungsart
+      pch = 18,                   # Form
+      col = "blue"                # Farbe
+)
+
+legend("topright",                 # Legende
+       legend=c("Verkaufszahlen 1", "Verkaufszahlen 2"),  #Bezeichnung der Legende
+       col=c("red", "blue"),       # Farbe der Legende
+       lty = 1:1,                  #Linie - durchgezogen / gestichelt
+       cex=1                     #Größe der Form
+)
+
+# col -> Farbe (Name, RGB,Hex oder Zahl im Bereich von 1 bis 657)
+#pch -> Form der Datenpunkte (0 - 25, Zeichen)
+#type -> b = Linie mit Punkten, l = nur Linie, p = Punkte, s = Stufe
+#lty -> Linienart (1 = durchgezogen, 2 = gestrichelt, 3 = gepunktet, ... 6)
+```

@@ -1,0 +1,145 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# AUFGABE:
+### t-Tests für unabhängige Stichproben
+
+```{r}
+data <- read.csv("Salary.csv",sep=";")
+data
+```
+
+Gibt es einen Unterschied in der durchschnittlichen Gehalt von Professoren und Professorinnen?
+
+## 1) Hypothese:
+
+(ungerichtete)
+
+H1: Es gibt einen Unterschied zwischen dem Gehalt von Professoren und Professorinnen. MM≠MF
+
+H0: Es gibt keinen Unterschied zwischen dem Gehalt von Professoren und Professorinnen. MM=MF
+
+(gerichtete)
+
+H1: Professorinnen verdienen weniger als Professoren.MF < MM
+
+H0: Professorinnen verdienen höher oder gleich wie Professoren. MF >= MM
+
+
+## 2) Voraussetzungen des t-Tests für unabhängige Stichproben
+
+Die abhängige Variable ist min. intervallskaliert -> salary ist metrisch  (AV)
+
+Es liegt eine unabhängige Variable vor, mittels der die beiden zu vergleichenden Gruppen gebildet werden. -> Ja, Männer und Frauen
+
+Das untersuchte Merkmal ist in den Grundgesamtheiten der beiden Gruppen normalverteilt -> siehe Histogramm
+
+Homogenität der Varianzen: Die Gruppen kommen aus Grundgesamtheiten mit annähernd identischer Varianz -> siehe Levene-Test
+
+Die einzelnen Messwerte sind voneinander unabhängig (das Verhalten einer Versuchsperson hat keinen Einfluss auf das Verhalten einer anderen) -> ist gegeben.
+
+### Prüfung der Normalverteilung mithilfe des Histogramms:
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+  data %>%
+  group_by(sex) %>%
+  ggplot(aes(salary)) + 
+    geom_histogram( binwidth=10000, aes(fill=sex), color="#e9ecef", alpha=0.7 ) + # Erstelle ein Histogramm, Unterteilung, Farbe + Transparenz
+   facet_wrap(~sex)+ # Zwei Graphen
+    theme_classic()+ #Farbschema
+    labs(x="Gruppierungen", y="Anzahl") # Beschriftung
+```
+
+```{r}
+f_salary_df <- subset(data, data$sex == "Female")
+m_salary_df <- subset(data, data$sex == "Male")
+```
+
+
+Es liegt eine Normalverteilung von.
+
+## 3) Grundlegende Konzepte: Was ist t-Test für unabhängige Stichproben?
+
+Der t-Test für unabhängige Stichproben testet, ob die Mittelwerte zweier unabhängiger Stichproben verschieden sind.
+
+Die Fragestellung des t-Tests für unabhängige Stichproben wird oft so verkürzt:
+"Unterscheiden sich die Mittelwerte zweier unabhängiger Stichproben?"
+
+## 4) Deskriptive Statistiken
+
+```{r}
+#library(dplyr)
+data %>%
+group_by(sex) %>%
+  summarize(Anzahl = n(), Mittelwert = mean(salary), Median = median(salary), Standardabweichung = sd(salary)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+Es zeigt sich für diese Fragestellung einen Mittelwertsunterschied. Das Gehalt bei Männer ist höher (M = 115090.4 SD = 30436.93, n = 358) als bei Frauen (M = 101002.4 SD = 25952.13, n = 39).
+
+## 5) Test auf Varianzhomogenität (Levene-Test)
+
+Der t-Test für unabhängige Gruppen setzt Varianzhomogenität voraus. Liegt Varianzheterogenität vor (also unterschiedliche Varianzen), so müssen unter anderem die Freiheitsgerade des t-Wertes angepasst werden. Ob die Varianzen nun homogen (“gleich”) sind, lässt sich mit dem Levene-Test auf Varianzhomogenität prüfen.
+
+Der Levene-Test verwendet die Nullhypothese, dass sich die beiden Varianzen nicht unterscheiden. Daher bedeutet ein nicht signifikantes Ergebnis, dass sich die Varianzen nicht unterscheiden und also Varianzhomogenität vorliegt. Ist der Test signifikant, so wird von Varianzheterogenität ausgegangen.
+
+```{r}
+library(carData)
+
+leveneTest(data$salary, factor(data$sex), center = mean)
+```
+Also es ist zuerkennen, das Homogenität vorliegt, da der Levene-Test nicht signifikant ist. Daher können wir von gleichen Varianzen ausgehen (F(1, 395) = 1.2714, p = 0.2602). Es ist daher nicht notwendig eine Welch-Korrektur durchzuführen.
+
+Mit Welch-Korrektur: p < 0.05 => Ergebnis Signifikant –> Varianzen heterogen
+
+Ohne Welch-Korrektur: p > 0.05 => Ergebnis nicht Signifikant –> Varianzen homogen –> H0 mit Annahme Var1=Var2
+
+## 6) Ergebnisse des t-Tests für unabhängige Stichproben
+
+An dieser Stelle findet die eigentliche Auswertung des t-Testes statt. Beim t-test wird die t-Verteilung verwendet.
+
+Auch hier ist auf die Reihenfolge zu achten erst AV(salary) und dann UV(sex). Da in diesem Beispiel eine ungerichtete Hypothese verwendet wird mit einem Sig.-Niveau von 0.05,ist “con= 0.95, alt =”two.sided"" zu verwenden. Sollten Sie sich jedoch entscheiden eine gerichtete Hypothese zu verwenden, dann empfiehlt es sich folgende Zeilen zu ersetzen “con= 0.95, alt =”greater"" Je nach Richtung “less” or “greater”. Sollte eine 1 bei p-value stehen ist es genau die andere Richtung.
+
+“Var.eq =True” bedeutet, dass die Varianzen homogen (gleich) sind, bzw. “Var.eq =False” das die Varianzen heterogen sind.
+
+### Variante 1: ohne Welch - Korrektur:
+
+#### ungerichtete Hypothese:
+
+```{r}
+test1<- t.test(data$salary~data$sex, var.eq = TRUE, con= 0.95, alt = "two.sided")
+test1
+```
+Die Teststatistik betraegt t = -2.7817 und der zugehörige Signifikanzwert p = 0.005667. Damit ist der Unterschied signifikant:
+
+Mittelwerte der Professoren und Professorinnen unterscheiden sich (t(395) = -2.7817, p = 0.005667, n= 397)
+
+#### gerichtete Hypothese:
+
+```{r}
+test1<- t.test(data$salary~data$sex, var.eq = TRUE, con= 0.95, alt = "less")
+test1
+```
+
+## 7) Berechnung der Effektstärke:
+
+Bei ungleichgroßen Gruppen:
+
+Diese Formel verwendet das EffSize-Package - Cooper et al. (2009):
+
+```{r}
+library(effsize)
+
+cohen.d(d = data$salary, f= data$sex)
+```
+Interpretation von d nach Cohen (1988):
+
+Damit entspricht eine Effektstaerke von 0.469 einem schwacher Effekt.
+
+
+## 8) Eine Aussage:
+
+Professoren verdienen signifikant höher (M = 115090.4 SD = 30436.93, n = 358) als Professorinnen (M = 101002.4 SD = 25952.13, n = 39) (t(395) = -2.7817, p = 0.005667, n= 397). Die Effektstärke liegt bei d = 0.469 und entspricht damit einem schwacher Effekt nach Cohen (1988). H0 kann verworfen werden.

@@ -1,0 +1,208 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+### AUFGABE: t-Tests für abhängige Stichproben
+
+```{r}
+library(readxl)
+ttestVER <- read_excel("verbunden2.xlsx")
+ttestVER
+```
+
+
+# Beschreibung:
+
+Eine Gruppe von 73 Teilnehmer beantworten einen ausführlichen Fragebogen zu Ihrer Zufriedenheit. Sie werden im befragt, wie zufrieden sie im Dorf und in der Stadt. Es soll geprüft werden, ob sich die Zufriedenheit im Dorf und in der Stadt unterscheidet.
+
+Der zu analysierende Datensatz enthält neben einer Teilnehmernummer (ID) die beiden Werte der Zufriedenheit (Dorf, Stadt).
+
+Unterscheiden sich die Zufriendeheit in der Stadt und auf dem Land (Dorf)?
+
+Variable_1 (AV): "Zufriedenheit"
+Variable_2 (UV): "Messzeitorten (Land, Stadt)"
+
+## 1) Hypothese 
+
+H1: Es gibt einen Unterschied zwischen der Stadt und dem Land (Dorf) durch die Zufriedenheit.
+
+H0: Es gibt keinen Unterschied zwischen der Stadt und dem Land (Dorf) durch die Zufriedenheit.
+
+## 2) Voraussetzungen des t-Tests für abhängige Stichproben
+
+Die abhängige Variable ist min. intervallskaliert -> Ja, Zufriedenheit ist metrisch.
+
+Es liegen zwei verbundene Stichproben oder Gruppen vor, aber die verschiedenen Messwertpaare sind voneinander unabhängig. 1) Sie sind verbundenen durch das Person, 2) aber unabhängige, weil es zwei verschiedene Messorte (Dorf und Stadt) sind.
+
+Die Unterschiede zwischen den verbundenen Testwerten sind in der Grundgesamtheit normalverteilt (bei Stichproben > 30 sind Verletzungen unproblematisch)
+
+### Erzeuge neue Variable:
+
+```{r}
+# Differenz erstellen
+zwischen <- ttestVER$T1_ZufriedenheitimDorf - ttestVER$T2_ZufriedenheitimStadt 
+zwischen
+```
+
+```{r}
+# Die Spalte "Differenz" wird zum Datensatz hinzugefügt
+ttestVER <- cbind(ttestVER, "Differenz" = zwischen)
+View(ttestVER)
+```
+
+```{r}
+# Falls es Probleme gibt
+ttestVER$Differenz <- as.numeric(ttestVER$Differenz)
+```
+
+### Pruefung der Verteilung:
+
+#### Histogramm zur Prüfung des Normalverteilung
+
+```{r}
+hist(ttestVER$Differenz, xlab = "Differenz der Zufriedenheit zwischen Stadt und Dorf", ylab= "Anzahl", main ="Histogramm der Differenz", breaks =20,  col = "hotpink3")
+```
+
+#### ALTERNATIVE: QQ-Diagramm zur Prüfung des Normalverteilung:
+
+Die Werte müssen entlang einer aufsteigenden Gerade liegen, so dass eine ähnliche Verteilung vermutet werden kann.
+
+```{r}
+library(car)
+
+qqPlot(ttestVER$Differenz, main = "QQPlot für die Var. Differenz")
+```
+Es gibt einen Ausreißer. Es muss entfernt werden:
+
+```{r}
+# Diese Zeilen sollen entfernt werden
+drops <- c(20)
+
+```
+
+
+```{r}
+# Zeilen löschen
+ttestVER <- ttestVER[-drops,]
+View(ttestVER)
+```
+
+```{r}
+library(car)
+
+qqPlot(ttestVER$Differenz, main = "QQPlot für die Var. Differenz")
+```
+Es gibt eine Normalverteilung. Bei Stichproben > 30 sind die Verletzungen unproblematisch.
+
+## 3) Grundlegende Konzepte: Was ist t-Test für abhängige Stichproben?
+
+Der t-Test für abhängige Stichproben überprüft, ob die Mittelwerte zweier abhängiger/gepaarter Stichproben verschieden sind.
+
+Von "abhängigen Stichproben" wird gesprochen, wenn der Messwert und ein bestimmter anderer Messwert sich gegenseitig beeinflussen. In folgende Situationen, die sich für eine verbundene Stichprobe eignen.
+
+Messwiederholung:
+Die Messwerte stammen von der gleichen Person z.B. Messzeitpunkt #1 verglichen mit Messzeitpunkt #2.
+
+Natürliche Paare:
+Die Messwerte stammen von verschiedenen Personen, die aber zusammen gehören:Ehefrau – Ehemann, Psychologe – Patient oder Zwillinge.
+
+Matching:
+Die Messwerte stammen ebenfalls von verschiedenen Personen, die einander zugeordnet wurden. Aufgrund eines vergleichbaren Werts (Drittvariablen) werden Matching-Paare gebildet.
+
+
+## 4) Deskriptive Statistiken und Korrelation
+
+### Korrelation:
+
+```{r}
+#library(car)
+scatterplot(ttestVER$T1_ZufriedenheitimDorf ~ ttestVER$T2_ZufriedenheitimStadt , main = "Streudiagramm zwischen Stadt und Dorf", xlab = "Stadt", ylab= "Dorf")
+```
+
+```{r}
+test <- cor.test(ttestVER$T1_ZufriedenheitimDorf, ttestVER$T2_ZufriedenheitimStadt)
+test
+```
+
+Die Zufriedenheit auf dem Land und in der Stadt korrelieren positiv-linear signifikant (r = .993, p = .000, n = 72).
+
+Bei Messwiederholungen ist es möglich, dass die Daten der ersten und zweiten Erhebung (respektive eines Messwertpaars) miteinander korrelieren. Es ist plausibel, dass zwei verbundene Messungen sich ähnlich sind und dass innerhalb eines Messwertpaares eher geringere Unterschiede auftreten als zwischen den Paaren.
+
+Im R-Output wird daher eine Pearson Korrelation der beiden Messzeitpunkte ausgegeben. Für das Beispiel ergibt sich eine sehr hohe Korrelation von r = .993 (p = .000, n = 72).
+
+### Deskriptive Statistiken:
+
+```{r}
+library(psych)
+g <- describe(ttestVER)
+g
+```
+
+Es zeigt sich, dass es einen Mittelwertsunterschied zwischen dem Dorf und der Stadt in Punkto ZUfriedenheit gibt. Die Mittelwerte unterscheiden sich dahingehend, das im Dorf bei 51.61 (SD = 20.39, n= 72), wohingegen in der Stadt bei 62.96 (SD = 20.78 ,n=72) liegt.
+
+## 5) Ergebnisse des t-Tests für abhängige Stichproben
+
+```{r}
+testVER<- t.test(ttestVER$T2_ZufriedenheitimStadt, ttestVER$T1_ZufriedenheitimDorf, alternative = "two.sided", paired = TRUE, conf.level = .95)
+
+testVER
+```
+
+Die Teststatistik beträgt t = 39.293 und der zugehörige Signifikanzwert p = .000. Damit ist der Unterschied signifikant: Die Mittelwerte der beiden Messzeitpunkte (Dorf und Stadt) unterscheiden sich (t(71) = 39.293, p = .000, n= 72).
+
+## 6) Berechnung der Effektstärke
+
+### Cohen und Pearson:
+
+$$r=\left\| \sqrt {\frac{t^2}{t^2+df}} \right\|$$
+
+```{r}
+eff1 <- abs(sqrt(testVER$statistic^2 / (testVER$statistic^2 + testVER$parameter)))
+
+sprintf("Effektstärke: %.4f",eff1)
+```
+
+Zur Beurteilung der Groesse des Effektes dient die Einteilung von Cohen (1992):
+
+$$\begin{align}
+\text{Schwacher Effekt: } 0.10 &< ||r|| < 0.30             \\
+\text{Schwacher bis mittlerer Effekt: } 0.30 &= ||r||      \\
+\text{Mittlerer Effekt: } 0.30 &< ||r|| < 0.50             \\
+\text{Mittlerer bis starker Effekt: }0.50 &= ||r||         \\
+\text{Starker Effekt: } 0.50 &< ||r||        
+\end{align}$$
+
+Damit entspricht eine Effektstärke von 0.9778 einem starken Effekt.
+
+### ALTERNATIV: Hedges g
+
+$$\rm{Hedges}\ \hat{g}=\left|\frac{\hat{\mu_1}-\hat{\mu_2}}{\hat{\sigma_{d}}}\right|$$
+
+```{r}
+diff <- testVER$estimate
+
+sed <- sd(ttestVER$T2_ZufriedenheitimStadt - ttestVER$T1_ZufriedenheitimDorf)
+
+g <- diff/sed
+
+sprintf("Effektstärke: %.4f",g)
+```
+
+Zur Beurteilung der Größe des Effektes:
+
+$$\begin{align}
+\text{Schwacher Effekt: } 0.20 &< ||g|| < 0.50             \\
+\text{Schwacher bis mittlerer Effekt: } 0.50 &= ||g||      \\
+\text{Mittlerer Effekt: } 0.50 &< ||g|| < 0.80             \\
+\text{Mittlerer bis starker Effekt: }0.80 &= ||g||         \\
+\text{Starker Effekt: } 0.80 &< ||g||        
+\end{align}$$
+
+Damit entspricht eine Effektstärke von 4.6307 einem starken Effekt.
+
+## 7) Eine Aussage:
+
+Es zeigt sich, dass die Zufriedenheit sowohl auf dem Land als auch in der Stadt statistisch signifikant sich unterscheiden (t(71) = 39.293, p = .000, n= 72). Die Zufriedenheit in der Stadt fällt höher aus (M = 62.96, SD = 20.78) als die Zufriedenheit auf dem Land (M=51.61, SD = 20.39). Die Effektstärke nach Cohen (1992) liegt bei r = 0.9778 und nach Hedges liegt bei g= 4.6307. Beide Werte entsprechen damit einem starken Effekt. H0 kann verworfen werden, H1 angenommen.
+
+
+

@@ -1,0 +1,23 @@
+mindesten 3 Ausprägungen.(viel, mittel, gering)(nominal oder ordinal)
+ein metrische abhängige Variable(mindestens intervalskaliert)
+
+- Wie viel Zeit wenden Schüler (Grundschule, Realschule, Gymnasium) für ihre Hausaufgaben auf?
+- Beeinflusst der Reifegrad (jung, mittel, alt)von Käse den Preis?
+- Wie lange bleiben Menschen mit unterschiedlichen Berufserfahrungslevels (Anfänger, Erfahrene, Führungskräfte) arbeitslos?
+- Verändert sich die Zahlungsdauer einer Rechnung in Abhängigkeit der Zahlungsart (Paypal, Kreditkarte, Rechnung, Überweisung...)
+- Gibt es einen Zusammenhang zwischen Brutto-Gehalt und Beziehungsstatus (single, verheiratet, geschieden)?
+- Unterscheiden sich Covid-19- Verlauf zwischen den Blutgruppen
+- Unterscheidet sich in der Altersgruppe (21-30, 31-40, 41-50...) wie glücklich man sich fühlt.
+- Unterscheiden sich die Miete pro m2 zwischen Land, Stadt und Großstadt?
+- Unterscheidet sich in der Berufserfahrung (viel, mittel, gering),
+wie hoch der Stundenlohn ausfällt?
+- Beeinflusst der Beziehungsstatus der Eltern (geschieden, patchwork, verheiratet) die Lebenszufriendenheit der Kinder?
+- Fünf verschiedene Verkaufsstrategien werden unter Laborbedingungen getestet. - Welche Strategie erhöht die Zahlungsbereitschaft der Konsumenten?
+- Mit vier Gruppen von Versuchspersonen wurde je ein andere Sportarten trainiert. Welche der Sportarten ist am erfolgreichsten in Bezug auf die Ausdauer?
+- Unterscheiden sich der Stundenlohn zwischen Master, Bachelor und Geselle?
+- Gibt es einen Unterschied zwischen Brutto-Gehalt (metrische) und Beziehungsstatus (Treatments: single, verheiratet, geschieden)?
+- Welche Teesorte (schwarzer Tee, Pfefferminztee, FAK-Tee, Kamillentee) schmeckt Senioren am besten (metrisch: Befragungsergebnis von 1-10)?
+- Unterscheidet sich der Verkaufspreis im Online-Handel für Sonnenmilch in Abhängigkeit des Wetters (sonnig, bewölkt, regnerisch)?
+- Gibt es Unterschiede der Ergebnisqualität einer Regression wenn sie extrapoliert wird?
+Treatments: unterhalb, innerhalb und oberhalb
+- Unterscheiden sich der Blutcholesterin zwischen viel-Raucher, mittel-Raucher und nicht-Raucher?
