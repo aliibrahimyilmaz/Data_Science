@@ -1,0 +1,137 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+## Project: t-Tests for independent Sample (Customer Segmentation)
+
+```{r}
+data <- read.csv("Mall_Customers.csv")
+data
+```
+
+```{r}
+colnames(data)[which(colnames(data) == 'Spending.Score..1.100.')] <- 'Spending_Score'
+colnames(data)[which(colnames(data) == 'Annual.Income..k..')] <- 'Annual_Income'
+```
+
+```{r}
+View(data)
+```
+
+
+## Description:
+
+Is there a difference in the average Spending_Score of customers in the mall by women and men?
+
+variable_1 (dependent): "Spending_Score"
+
+variable_2 (independent): "Gender"
+
+## 1) Hypothese:
+
+(two-sided)
+
+H1: There is a difference between the average Spending_Score of customers in the mall by women and men. MM≠MF
+
+H0: There is no difference between the average Spending_Score of customers in the mall by women and men. MM=MF
+
+## 2) Requirements of t-Tests for independent Sample:
+
+The dependent variable is min. interval scaled -> Yes, "Spending Score" is metric  (dependent)
+
+There is an independent variable by means of which the two groups to be compared are formed. -> Yes, Female und Male
+
+The examined characteristic is normally distributed in the populations of the two groups -> Look Histogram
+
+Homogeneity of the variances: The groups come from populations with approximately identical variance ->Look Levene-Test
+
+The individual measured values are independent of each other (the behavior of one test person has no influence on the behavior of another) -> is given.
+
+### Checking the normal distribution with the help of the histogram:
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+  data %>%
+  group_by(Gender) %>%
+  ggplot(aes(Spending_Score)) + 
+    geom_histogram( binwidth=12, aes(fill=Gender), color="#e9ecef", alpha=0.7 ) + # Erstelle ein Histogramm, Unterteilung, Farbe + Transparenz
+   facet_wrap(~Gender)+ # Zwei Graphen
+    theme_classic()+ #Farbschema
+    labs(x="Grup", y="Number") # Beschriftung
+```
+
+There is a normal distribution.
+
+## 3) Basic Concepts: What is t-Test for Independent Samples?
+
+The t-test for independent samples tests whether the means of two independent samples are different. The question of the t-test for independent samples is often shortened as follows: "Are the means of two independent samples different?"
+
+## 4) Descriptive statistics
+
+```{r}
+library(dplyr)
+data %>%
+group_by(Gender) %>%
+  summarize(Anzahl = n(), Mean = mean(Spending_Score), Median = median(Spending_Score), SD = sd(Spending_Score)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+There is a mean value difference for this question. The spending score for women (M = 51.53 SD = 24.11, n = 112)  is higher than for men (M = 48.51 SD = 27.90, n = 88).
+
+## 5) Test for homogeneity of variance (Levene-Test)
+
+The t-test for independent groups assumes homogeneity of variance. If there is heterogeneity of variance (i.e. different variances), the degree of freedom of the t-value must be adjusted. Whether the variances are homogeneous (“equal”) can be checked with the Levene test.
+
+The Levene test uses the null hypothesis that the two variances do not differ. A result that is not significant means that the variances do not differ and that there is homogeneity of variance. If the test is significant, heterogeneity of variance is assumed.
+
+```{r}
+library(car)
+
+leveneTest(data$Spending_Score, factor(data$Gender), center = mean)
+```
+
+So it is recognized that there is homogeneity since the Levene test is not significant. We can therefore assume the same variances (F (1, 198) = 2.293, p = 0.1315). It is therefore not necessary to carry out a Welch correction.
+
+with Welch-Korrektur: p < 0.05 => Result significant –> Variances heterogeneous
+
+without Welch-Korrektur: p > 0.05 => Result not significant –> Variances homogeneous –> H0 with assumption Var1=Var2
+
+## 6) Results of the t-test for independent samples:
+
+The actual evaluation of the t-test takes place at this point. The t-distribution is used in the t-test. Here, you should pay attention to the order of variables, first  dependent variable (spending score) and then independent variable (gender). Since a two-sided hypothesis is used in this example with a Significant Level of 0.05, "con = 0.95, alt = "two.sided" should be used. However, if you decide to use a one-sided hypothesis, then it is advisable to replace the following lines "con = 0.95, alt = "greater" depending on the direction "less" or "greater". If there is a 1 at p-value it is exactly the other direction. “Var.eq = True” means that the variances are homogeneous (equal), or “Var.eq = False” that the variances are heterogeneous.
+
+### Witout Welch-Korrektur:
+
+```{r}
+without_welch<- t.test(data$Spending_Score~data$Gender, var.eq = TRUE, con= 0.95, alt = "two.sided")
+without_welch
+```
+The test statistic is t = 0.81905 and the associated significance value is p = 0.4137. This means that the difference is not significant: the mean values for women and men do not differ (t(198) = 0.81905, p = 0.4137)
+
+## 7) Calculation of the Effect Size:
+
+With groups of different sizes:
+
+This formula uses the EffSize package - Cooper et al. (2009):
+
+```{r}
+library(effsize)
+
+cohen.d(d = data$Spending_Score, f= data$Gender)
+```
+Interpretation of d according to Cohen (1988):
+
+$$\begin{align}
+\text{Weak Effect: } 0.20 &< ||d|| < 0.50             \\
+\text{Weak to Middle Effect: } 0.50 &= ||d||      \\
+\text{Middle Effect: } 0.50 &< ||d|| < 0.80             \\
+\text{Middle to Strong Effect: }0.80 &= ||d||         \\
+\text{Strong Effect: } 0.80 &< ||d||        
+\end{align}$$
+
+This corresponds to no effect size (d = 0.116). 
+
+## 8) Summary:
+
+The Spending_Score for women is not significantly higher (M = 51.53 SD = 24.11, n = 112) than for men (M = 48.51 SD = 27.90, n = 88). The effect size is d = 0.116 and therefore does not correspond to any effect according to Cohen (1988). H0 can not be rejected. There is no difference between the average Spending_Score of customers in the mall by women and men.

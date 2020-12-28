@@ -1,0 +1,142 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+### AUFGABE: t-Tests für unabhängige Stichproben (Customer Segmentation)
+
+```{r}
+data <- read.csv("Mall_Customers.csv")
+data
+```
+
+```{r}
+colnames(data)[which(colnames(data) == 'Spending.Score..1.100.')] <- 'Spending_Score'
+colnames(data)[which(colnames(data) == 'Annual.Income..k..')] <- 'Annual_Income'
+```
+
+```{r}
+View(data)
+```
+
+
+# Beschreibung:
+
+Gibt es einen Unterschied in der durchschnittlichen Annual_Income der Kunden in der Einkaufszentrum von Frauen und Männern?
+
+Variable_1 (AV): "Annual_Income" 
+Variable_2 (UV): "Gender"
+
+## 1) Hypothese:
+
+(ungerichtete)
+
+H1: Es gibt einen Unterschied zwischen der durchschnittlichen Annual_Income der Kunden in der Einkaufszentrum von Frauen und Männern. MM≠MF
+
+H0: Es gibt keinen Unterschied zwischen der durchschnittlichen Annual_Income der Kunden in der Einkaufszentrum von Frauen und Männern. MM=MF
+
+## 2) Voraussetzungen des t-Tests für unabhängige Stichproben
+
+Die abhängige Variable ist min. intervallskaliert -> "Annual_Income" ist metrisch  (AV)
+
+Es liegt eine unabhängige Variable vor, mittels der die beiden zu vergleichenden Gruppen gebildet werden. -> Ja, Frauen und Männer
+
+Das untersuchte Merkmal ist in den Grundgesamtheiten der beiden Gruppen normalverteilt -> siehe Histogramm
+
+Homogenität der Varianzen: Die Gruppen kommen aus Grundgesamtheiten mit annähernd identischer Varianz -> siehe Levene-Test
+
+Die einzelnen Messwerte sind voneinander unabhängig (das Verhalten einer Versuchsperson hat keinen Einfluss auf das Verhalten einer anderen) -> ist gegeben.
+
+### Prüfung der Normalverteilung mithilfe des Histogramms:
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+  data %>%
+  group_by(Gender) %>%
+  ggplot(aes(Annual_Income)) + 
+    geom_histogram( binwidth=12, aes(fill=Gender), color="#e9ecef", alpha=0.7 ) + # Erstelle ein Histogramm, Unterteilung, Farbe + Transparenz
+   facet_wrap(~Gender)+ # Zwei Graphen
+    theme_classic()+ #Farbschema
+    labs(x="Gruppierungen", y="Anzahl") # Beschriftung
+```
+
+Es liegt eine Normalverteilung von.
+
+## 3) Grundlegende Konzepte: Was ist t-Test für unabhängige Stichproben?
+
+Der t-Test für unabhängige Stichproben testet, ob die Mittelwerte zweier unabhängiger Stichproben verschieden sind.
+
+Die Fragestellung des t-Tests für unabhängige Stichproben wird oft so verkürzt:
+"Unterscheiden sich die Mittelwerte zweier unabhängiger Stichproben?"
+
+## 4) Deskriptive Statistiken
+
+```{r}
+library(dplyr)
+data %>%
+group_by(Gender) %>%
+  summarize(Anzahl = n(), Mittelwert = mean(Annual_Income), Median = median(Annual_Income), Standardabweichung = sd(Annual_Income)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+Es zeigt sich für diese Fragestellung einen Mittelwertsunterschied. Die Annual_Income bei Männern ist höher (M = 62.23 SD = 26.64, n = 88) als bei Frauen (M = 59.25 SD = 26.01, n = 112).
+
+## 5) Test auf Varianzhomogenität (Levene-Test)
+
+Der t-Test für unabhängige Gruppen setzt Varianzhomogenität voraus. Liegt Varianzheterogenität vor (also unterschiedliche Varianzen), so müssen unter anderem die Freiheitsgerade des t-Wertes angepasst werden. Ob die Varianzen nun homogen (“gleich”) sind, lässt sich mit dem Levene-Test auf Varianzhomogenität prüfen.
+
+Der Levene-Test verwendet die Nullhypothese, dass sich die beiden Varianzen nicht unterscheiden. Daher bedeutet ein nicht signifikantes Ergebnis, dass sich die Varianzen nicht unterscheiden und also Varianzhomogenität vorliegt. Ist der Test signifikant, so wird von Varianzheterogenität ausgegangen.
+
+```{r}
+library(car)
+
+leveneTest(data$Annual_Income, factor(data$Gender), center = mean)
+```
+Also es ist zuerkennen, das Homogenität vorliegt, da der Levene-Test nicht signifikant ist. Daher können wir von gleichen Varianzen ausgehen (F(1, 198) = 0.0106, p = 0.9181). Es ist daher nicht notwendig, eine Welch-Korrektur durchzuführen.
+
+Mit Welch-Korrektur: p < 0.05 => Ergebnis Signifikant –> Varianzen heterogen
+
+Ohne Welch-Korrektur: p > 0.05 => Ergebnis nicht Signifikant –> Varianzen homogen –> H0 mit Annahme Var1=Var2
+
+## 6) Ergebnisse des t-Tests für unabhängige Stichproben
+
+An dieser Stelle findet die eigentliche Auswertung des t-Testes statt. Beim t-test wird die t-Verteilung verwendet.
+
+Auch hier ist auf die Reihenfolge zu achten erst AV(Annual_Income) und dann UV(Gender). Da in diesem Beispiel eine ungerichtete Hypothese verwendet wird mit einem Sig.-Niveau von 0.05,ist "con= 0.95, alt ="two.sided"" zu verwenden. Sollten Sie sich jedoch entscheiden eine gerichtete Hypothese zu verwenden, dann empfiehlt es sich folgende Zeilen zu ersetzen "con= 0.95, alt ="greater"" Je nach Richtung "less" or "greater". Sollte eine 1 bei p-value stehen ist es genau die andere Richtung.
+
+“Var.eq = True” bedeutet, dass die Varianzen homogen (gleich) sind, bzw. “Var.eq = False” das die Varianzen heterogen sind.
+
+### Ohne Welch-Korrektur:
+
+```{r}
+ohne_welch<- t.test(data$Annual_Income~data$Gender, var.eq = TRUE, con= 0.95, alt = "two.sided")
+ohne_welch
+```
+Die Teststatistik betraegt t = -0.79502 und der zugehörige Signifikanzwert p = 0.4276. Damit ist der Unterschied nicht signifikant: Mittelwerte der Frauen und Männer unterscheiden sich nicht (t(198) = -0.79502, p = 0.4276)
+
+## 7) Berechnung der Effektstärke:
+
+Bei ungleichgroßen Gruppen:
+
+Diese Formel verwendet das EffSize-Package - Cooper et al. (2009):
+
+```{r}
+library(effsize)
+
+cohen.d(d = data$Annual_Income, f= data$Gender)
+```
+Interpretation von d nach Cohen (1988):
+
+$$\begin{align}
+\text{Schwacher Effekt: } 0.20 &< ||d|| < 0.50             \\
+\text{Schwacher bis mittlerer Effekt: } 0.50 &= ||d||      \\
+\text{Mittlerer Effekt: } 0.50 &< ||d|| < 0.80             \\
+\text{Mittlerer bis starker Effekt: }0.80 &= ||d||         \\
+\text{Starker Effekt: } 0.80 &< ||d||        
+\end{align}$$
+
+Damit entspricht keine Effektstaerke (d = 0.113). 
+
+## 8) Eine Aussage:
+
+Die Annual_Income bei Männern ist nicht signifikant höher (M = 62.23 SD = 26.64, n = 88) als bei Frauen (M = 59.25 SD = 26.01, n = 112). Die Effektstärke liegt bei d = 0.113 und entspricht damit keine Effekt nach Cohen (1988). H0 wird beibehalten.
